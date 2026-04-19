@@ -79,6 +79,7 @@ export interface Endpoint {
   foundAt: string;
   webpage: string;
   classifications: Record<string, boolean>;
+  captureIndex: number;
 }
 
 export interface URLEntry {

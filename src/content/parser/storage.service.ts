@@ -3,6 +3,14 @@ import { URLParserStorageWithOptionalCurrent, URLParserStorageItem } from './par
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
 import { decode } from 'punycode';
 
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export class StorageService {
   static async getConcurrencySetting(): Promise<number> {
     const result = await browser.storage.local.get('requests');
@@ -36,7 +44,7 @@ export class StorageService {
     }
 
     urlParser[currentURL].externalJSFiles[encodedURL] = urls.map(url => ({
-      url: decodeURIComponent(url),
+      url: safeDecodeURIComponent(url),
       classifications: {} as URLClassification
     }));
 

@@ -23,6 +23,7 @@ export async function formatURLData(): Promise<FormattedURLData> {
   let locations: Location[] = [];
   let webpages: Webpage[] = [];
   let hierarchy: FormattedURLData['hierarchy'] = {};
+  let captureIndex = 0;
 
   if (!urlParserData) {
     return {
@@ -47,7 +48,8 @@ export async function formatURLData(): Promise<FormattedURLData> {
         url: endpoint.url,
         foundAt: webpage,
         webpage: webpage,
-        classifications: endpoint.classifications as unknown as Record<string, boolean>
+        classifications: endpoint.classifications as unknown as Record<string, boolean>,
+        captureIndex: ++captureIndex,
       }));
       allEndpoints.push(...mainPageEndpoints);
       hierarchy[webpage].mainPage = mainPageEndpoints;
@@ -63,7 +65,8 @@ export async function formatURLData(): Promise<FormattedURLData> {
           url: endpoint.url,
           foundAt: decodedJsFile,
           webpage: webpage,
-          classifications: endpoint.classifications as unknown as Record<string, boolean>
+          classifications: endpoint.classifications as unknown as Record<string, boolean>,
+          captureIndex: ++captureIndex,
         }));
         allEndpoints.push(...jsFileEndpoints);
         hierarchy[webpage].jsFiles[decodedJsFile] = jsFileEndpoints;

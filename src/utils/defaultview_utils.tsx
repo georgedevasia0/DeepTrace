@@ -52,6 +52,7 @@ export async function deleteSelectedURLs(endpointsToDelete: Endpoint[]): Promise
         foundAt: webpage,
         webpage,
         classifications: endpoint.classifications as Record<string, boolean>,
+        captureIndex: 0,
       });
 
       return !keysToDelete.has(endpointKey);
@@ -66,6 +67,7 @@ export async function deleteSelectedURLs(endpointsToDelete: Endpoint[]): Promise
             foundAt: decodedJsFile,
             webpage,
             classifications: endpoint.classifications as Record<string, boolean>,
+            captureIndex: 0,
           });
 
           return !keysToDelete.has(endpointKey);

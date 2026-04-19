@@ -61,6 +61,10 @@ export function useURLData(
 
     return [...filtered].sort((a, b) => {
       switch (sortOption) {
+        case 'captured-asc':
+          return a.captureIndex - b.captureIndex;
+        case 'captured-desc':
+          return b.captureIndex - a.captureIndex;
         case 'url-desc':
           return b.url.localeCompare(a.url);
         case 'source-asc':

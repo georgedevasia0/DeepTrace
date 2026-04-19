@@ -44,12 +44,17 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
   };
 
   const sanitizedSourceLabel = endpoint.foundAt === endpoint.webpage ? 'Main document' : 'JavaScript asset';
+  const rowClass = isSelected
+    ? (isLight ? 'bg-[#eaf6fb]/90' : 'bg-[#193847]/55')
+    : (isLight ? 'bg-white/80' : 'bg-transparent');
+  const cellClass = `!px-4 !py-4 align-top md:!px-5 ${isLight ? 'border-[#dce9f0]' : 'border-[#223740]'}`;
+  const subtleTextClass = isLight ? 'text-slate-500' : 'text-slate-400';
+  const mainTextClass = isLight ? 'text-slate-900' : 'text-white';
 
   return (
-    <tr className={`transition-all duration-200 ${isSelected ? (isLight ? 'bg-[#eaf6fb]/80' : 'bg-[#193847]/70') : 'bg-transparent'}`}>
-      <td className="px-4 py-3 md:px-6 md:py-4">
-        <div className={`rounded-[24px] border p-4 shadow-[0_16px_60px_rgba(0,0,0,0.12)] transition-all duration-200 ${isLight ? 'border-[#d6e4ed] bg-[linear-gradient(180deg,#ffffff,#f6fbff)] hover:border-[#8fc9da]' : 'border-[#29424d] bg-[linear-gradient(180deg,rgba(24,37,44,0.96),rgba(17,26,31,0.96))] hover:border-[#4a7e8d] hover:shadow-[0_18px_70px_rgba(10,19,24,0.38)]'}`}>
-          <div className="flex items-start gap-3">
+    <tr className={`border-b transition-all duration-200 ${rowClass} ${isLight ? 'hover:bg-[#f5fbff]' : 'hover:bg-[#13252d]/65'}`}>
+      <td className={cellClass}>
+        <div className="flex items-start gap-3">
           <input
             type="checkbox"
             checked={isSelected}
@@ -59,6 +64,9 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
           />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${isLight ? 'border-[#d7e4ec] bg-[#ffffff] text-slate-700' : 'border-[#314d57] bg-[#0f1d23] text-[#b8d6df]'}`}>
+                #{endpoint.captureIndex}
+              </span>
               <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${isLight ? 'border-[#cfe0ea] bg-[#f0f8fc] text-[#2d7b96]' : 'border-[#325260] bg-[#11242d] text-[#7fb8cb]'}`}>
                 Endpoint
               </span>
@@ -66,7 +74,7 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
                 {sanitizedSourceLabel}
               </span>
             </div>
-            <div className={`mt-3 break-words font-mono text-sm leading-7 md:text-[15px] ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <div className={`mt-3 whitespace-normal break-all font-mono text-sm leading-6 md:text-[15px] ${mainTextClass}`}>
               {highlightSearchQuery(endpoint.url, searchQuery)}
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
@@ -75,17 +83,6 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
                   {category.replace(/_/g, ' ')}
                 </span>
               ))}
-            </div>
-
-            <div className={`mt-4 grid gap-3 text-sm md:grid-cols-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
-              <div className={`rounded-2xl border px-3 py-3 ${isLight ? 'border-[#d9e6ee] bg-[#f8fbfd]' : 'border-[#2b4049] bg-[#0f1d23]/90'}`}>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#7eaabc]">Source</div>
-                <div className={`mt-2 break-words text-[13px] leading-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>{endpoint.foundAt}</div>
-              </div>
-              <div className={`rounded-2xl border px-3 py-3 ${isLight ? 'border-[#d9e6ee] bg-[#f8fbfd]' : 'border-[#2b4049] bg-[#0f1d23]/90'}`}>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#7eaabc]">Webpage</div>
-                <div className={`mt-2 break-words text-[13px] leading-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>{endpoint.webpage}</div>
-              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -108,10 +105,21 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
             </Modal>
           </div>
         </div>
+      </td>
+      <td className={cellClass}>
+        <div className="min-w-0">
+          <div className="text-[11px] uppercase tracking-[0.2em] text-[#7eaabc]">{sanitizedSourceLabel}</div>
+          <div className={`mt-2 whitespace-normal break-all text-sm leading-6 ${mainTextClass}`}>{endpoint.foundAt}</div>
         </div>
       </td>
-      <td className="hidden"></td>
-      <td className="hidden"></td>
+      <td className={cellClass}>
+        <div className="min-w-0">
+          <div className={`whitespace-normal break-all text-sm leading-6 ${mainTextClass}`}>{endpoint.webpage}</div>
+          {endpoint.webpage === endpoint.foundAt && (
+            <div className={`mt-2 text-xs ${subtleTextClass}`}>Same as source document</div>
+          )}
+        </div>
+      </td>
     </tr>
   );
 }

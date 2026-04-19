@@ -201,7 +201,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
     <div className={shellClass}>
       {(document.location.pathname.toLowerCase().includes("devtool") && <NavBar />)}
 
-      <div className="mx-auto mt-5 w-full max-w-7xl">
+      <div className="mt-5 w-full">
         <div className="flex flex-col gap-6">
           <div className={panelClass}>
             <div className={heroClass}>
@@ -302,6 +302,8 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                     <input type="text" value={searchQuery} onChange={handleSearchChange} className={inputClass} placeholder="Search endpoints, path fragments, or parameters..." />
                     <div className="flex flex-wrap gap-3">
                       <select value={sortOption} onChange={handleSortChange} className={selectClass} aria-label="Sort endpoints">
+                        <option value="captured-asc">Captured First</option>
+                        <option value="captured-desc">Captured Last</option>
                         <option value="url-asc">URL A-Z</option>
                         <option value="url-desc">URL Z-A</option>
                         <option value="source-asc">Source A-Z</option>
@@ -326,52 +328,8 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                       >
                         Delete Selected ({selectedFilteredCount})
                       </button>
-                      <button
-                        type="button"
-                        className={`${filterToggle ? (isLight ? 'bg-[#dff1f8] text-[#1f5f74] border-[#8cc8da]' : 'bg-[#4e94a6] text-[#10242d] border-[#7ad4e7]') : (isLight ? 'bg-[#ffffff] text-[#527383] border-[#d3e3ec]' : 'bg-[#13252d] text-[#89c0d1] border-[#335561]')} rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-200 hover:border-[#7ad4e7]`}
-                        onClick={() => { setFilterToggle(!filterToggle); }}
-                      >
-                        {filterToggle ? 'Hide Categories' : 'Show Categories'}
-                      </button>
                     </div>
                   </div>
-                  {filterToggle && (
-                    <div className={`mt-4 rounded-[24px] border p-5 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#29424d] bg-[#0c161b]/80'}`}>
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-[11px] uppercase tracking-[0.24em] text-[#7fb8cb]">Classification Filters</div>
-                          <div className={`mt-1 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Refine the result set by endpoint signal type.</div>
-                        </div>
-                        <button type="button" onClick={handleSelectAllChange} className="rounded-full border border-[#325260] bg-[#10262f]/90 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8bc5d7]">
-                          {allSelected ? 'Clear All' : 'Toggle All'}
-                        </button>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {Object.entries(FILTER_CATEGORIES).map(([category, colorClass]) => (
-                          <button
-                            key={category}
-                            type="button"
-                            onClick={() => handleCheckboxChange(category)}
-                            className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 ${
-                              selectedCategories[category]
-                                ? 'border-[#477988] bg-[#12262f] shadow-[0_10px_30px_rgba(12,27,34,0.35)]'
-                                : isLight ? 'border-[#d6e5ed] bg-[#ffffff] opacity-90' : 'border-[#273941] bg-[#101a1f] opacity-75'
-                            }`}
-                          >
-                            <span className="flex items-center gap-3">
-                              <span className={`h-3 w-3 rounded-full ${selectedCategories[category] ? 'bg-[#6cc5d8]' : 'bg-slate-600'}`}></span>
-                              <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${colorClass}`}>
-                                {category.replace(/_/g, ' ')}
-                              </span>
-                            </span>
-                            <span className={`rounded-full border px-2 py-1 text-xs text-customFont ${isLight ? 'border-[#d6e5ed]' : 'border-white/10'}`}>
-                              {categoryCounts[category as ClassificationType] || 0}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className={`${sectionClass} self-start`}>
@@ -410,10 +368,61 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                   </div>
                 </div>
               </div>
+
+              <div className={`mt-4 ${sectionClass}`}>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-[0.24em] text-[#7fb8cb]">Classification Filters</div>
+                      <div className={`mt-1 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Expand this panel to refine the full result set by endpoint signal type.</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className={`${filterToggle ? (isLight ? 'border-[#8cc8da] bg-[#dff1f8] text-[#1f5f74]' : 'border-[#7ad4e7] bg-[linear-gradient(135deg,#215160,#2b697c)] text-[#daf8ff]') : (isLight ? 'border-[#d3e3ec] bg-[#ffffff] text-[#527383]' : 'border-[#335561] bg-[#13252d] text-[#89c0d1]')} rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-200 hover:border-[#7ad4e7]`}
+                        onClick={() => { setFilterToggle(!filterToggle); }}
+                      >
+                        {filterToggle ? 'Hide Categories' : 'Show Categories'}
+                      </button>
+                      <button type="button" onClick={handleSelectAllChange} className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${isLight ? 'border-[#d3e3ec] bg-[#ffffff] text-slate-700 hover:border-[#8bc7d9]' : 'border-[#325260] bg-[#10262f]/90 text-[#8bc5d7] hover:border-[#6bb5c8]'}`}>
+                        {allSelected ? 'Clear All' : 'Toggle All'}
+                      </button>
+                    </div>
+                  </div>
+                  {filterToggle && (
+                    <div className={`rounded-[24px] border p-5 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#29424d] bg-[#0c161b]/80'}`}>
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {Object.entries(FILTER_CATEGORIES).map(([category, colorClass]) => (
+                          <button
+                            key={category}
+                            type="button"
+                            onClick={() => handleCheckboxChange(category)}
+                            className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 ${
+                              selectedCategories[category]
+                                ? 'border-[#477988] bg-[#12262f] shadow-[0_10px_30px_rgba(12,27,34,0.35)]'
+                                : isLight ? 'border-[#d6e5ed] bg-[#ffffff] opacity-90' : 'border-[#273941] bg-[#101a1f] opacity-75'
+                            }`}
+                          >
+                            <span className="flex items-center gap-3">
+                              <span className={`h-3 w-3 rounded-full ${selectedCategories[category] ? 'bg-[#6cc5d8]' : 'bg-slate-600'}`}></span>
+                              <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${colorClass}`}>
+                                {category.replace(/_/g, ' ')}
+                              </span>
+                            </span>
+                            <span className={`rounded-full border px-2 py-1 text-xs text-customFont ${isLight ? 'border-[#d6e5ed]' : 'border-white/10'}`}>
+                              {categoryCounts[category as ClassificationType] || 0}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="px-4 py-5 md:px-6">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 px-2">
+            <div className="px-2 py-5 md:px-3">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-1">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.24em] text-[#7fb8cb]">Results</div>
                   <div className={`mt-1 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Each row highlights an endpoint with its source, webpage, and actions.</div>
@@ -427,31 +436,38 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                   </span>
                 </div>
               </div>
-              <div className={`w-full max-h-[760px] overflow-auto rounded-[28px] border p-2 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#28424c] bg-[#0b1418]/80'}`} ref={tableRef} onScroll={handleScroll}>
-                <div className="min-w-full inline-block align-middle">
+              <div className={`w-full max-h-[760px] overflow-y-auto overflow-x-hidden rounded-[24px] border ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#28424c] bg-[#0b1418]/80'}`} ref={tableRef} onScroll={handleScroll}>
+                <div className="w-full align-middle">
                   <div className="overflow-hidden">
-                    <table className="min-w-full border-separate border-spacing-y-3">
+                    <table className="min-w-full table-fixed">
+                      <colgroup>
+                        <col className="w-[31%]" />
+                        <col className="w-[34.5%]" />
+                        <col className="w-[34.5%]" />
+                      </colgroup>
                       <thead>
-                        <tr className="text-left text-white">
-                          <th className="px-4 pb-2 pt-3 text-xs font-semibold uppercase tracking-[0.28em] text-[#7fb8cb]">
-                            Endpoint Cards
+                        <tr className={`${isLight ? 'bg-[#eef6fb]' : 'bg-[#0f1b20]'} text-left align-top`}>
+                          <th className="!px-4 !py-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#7fb8cb] md:!px-5 w-[34%]">
+                            Endpoint
                           </th>
-                          <th className="hidden"></th>
-                          <th className="hidden"></th>
+                          <th className="!px-4 !py-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#7fb8cb] md:!px-5 w-[33%]">
+                            Source
+                          </th>
+                          <th className="!px-4 !py-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#7fb8cb] md:!px-5 w-[33%]">
+                            Webpage
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {visibleUrls.length === 0 ? (
                           <tr>
-                            <td className="px-4 py-12">
+                            <td colSpan={3} className="!px-4 !py-12">
                               <div className={`rounded-[24px] border border-dashed px-6 py-12 text-center ${isLight ? 'border-[#d6e5ed] bg-[#ffffff]' : 'border-[#365562] bg-[#101c21]/90'}`}>
                                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#7fb8cb]">No Results</div>
                                 <div className={`mt-3 text-2xl font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>No endpoints match the current panel filters.</div>
                                 <div className={`mt-2 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Try broadening the search text, source scope, webpage scope, or category selection.</div>
                               </div>
                             </td>
-                            <td className="hidden"></td>
-                            <td className="hidden"></td>
                           </tr>
                         ) : (
                           visibleUrls.map((endpoint, index) => (

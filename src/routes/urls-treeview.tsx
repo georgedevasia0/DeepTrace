@@ -109,12 +109,12 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
     );
   };
 
-  const renderEndpoint = (endpoint: Endpoint) => {
-    return (
-      <div
-        key={`${endpoint.webpage}-${endpoint.foundAt}-${endpoint.url}`}
-        className={`rounded-2xl border px-4 py-3 ${isLight ? 'border-[#d9e6ee] bg-[#ffffff]' : 'border-[#2a434d] bg-[#0f1c22]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]'}`}
-      >
+  const renderEndpoint = (endpoint: Endpoint) => (
+    <div key={`${endpoint.webpage}-${endpoint.foundAt}-${endpoint.url}`} className="relative pl-8">
+      <span className={`absolute left-[9px] top-0 bottom-0 w-px ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
+      <span className={`absolute left-[9px] top-7 h-px w-4 ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
+      <span className={`absolute left-1 top-[23px] h-3 w-3 rounded-full border ${isLight ? 'border-[#7fb8cb] bg-[#f8fbfd]' : 'border-[#6eb9cb] bg-[#102028]'}`}></span>
+      <div className={`min-w-0 rounded-2xl border px-3 py-3 md:px-4 ${isLight ? 'border-[#d9e6ee] bg-[#ffffff]' : 'border-[#2a434d] bg-[#0f1c22]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]'}`}>
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${isLight ? 'border-[#cfe0ea] bg-[#f0f8fc] text-[#2d7b96]' : 'border-[#385c69] bg-[#10262f] text-[#8ec9db]'}`}>
             Endpoint
@@ -123,12 +123,12 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
             {endpoint.foundAt === endpoint.webpage ? 'Main Page' : 'JavaScript'}
           </span>
         </div>
-        <div className={`mt-3 break-words font-mono text-sm leading-7 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+        <div className={`mt-3 whitespace-normal break-all font-mono text-sm leading-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>
           {highlightSearchQuery(endpoint.url)}
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   const renderHierarchicalView = () => {
     const renderedItems = Object.entries(hierarchy).map(([webpage, { mainPage, jsFiles }]) => {
@@ -145,18 +145,18 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
       return (
         <div
           key={webpage}
-          className={`rounded-[28px] border p-4 ${isLight ? 'border-[#d6e5ed] bg-[#ffffff]' : 'border-[#29424d] bg-[linear-gradient(180deg,rgba(16,28,34,0.95),rgba(11,20,25,0.95))] shadow-[0_20px_60px_rgba(0,0,0,0.22)]'}`}
+          className={`min-w-0 rounded-[28px] border p-3 md:p-4 ${isLight ? 'border-[#d6e5ed] bg-[#ffffff]' : 'border-[#29424d] bg-[linear-gradient(180deg,rgba(16,28,34,0.95),rgba(11,20,25,0.95))] shadow-[0_20px_60px_rgba(0,0,0,0.22)]'}`}
         >
           <button
             type="button"
-            className={`flex w-full items-center justify-between gap-4 rounded-[22px] border px-4 py-4 text-left transition-all duration-200 hover:border-[#76c5d8] ${isLight ? 'border-[#d3e3ec] bg-[#f8fbfd]' : 'border-[#345964] bg-[#0f2128]/90'}`}
+            className={`flex w-full min-w-0 items-start justify-between gap-4 rounded-[22px] border px-3 py-4 text-left transition-all duration-200 hover:border-[#76c5d8] md:px-4 ${isLight ? 'border-[#d3e3ec] bg-[#f8fbfd]' : 'border-[#345964] bg-[#0f2128]/90'}`}
             onClick={() => toggleExpand(webpage)}
           >
             <div className="min-w-0">
               <div className="text-[11px] uppercase tracking-[0.24em] text-[#7fb8cb]">Webpage</div>
-              <div className={`mt-2 break-words text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{webpage}</div>
+              <div className={`mt-2 whitespace-normal break-all text-lg font-semibold leading-7 ${isLight ? 'text-slate-900' : 'text-white'}`}>{webpage}</div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <span className={`rounded-full border px-3 py-1 text-xs ${isLight ? 'border-[#d6e5ed] text-slate-600' : 'border-white/10 text-slate-300'}`}>
                 {filteredMainPage.length + filteredJsFiles.reduce((sum, [, endpoints]) => sum + filterEndpoints(endpoints).length, 0)} matches
               </span>
@@ -165,30 +165,36 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
           </button>
 
           {webpageExpanded && (
-            <div className="mt-4 grid gap-4">
+            <div className="relative mt-4 grid gap-4 pl-8">
+              <span className={`absolute left-[9px] top-0 bottom-0 w-px ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
               {filteredMainPage.length > 0 && (
-                <div className={`rounded-[24px] border p-4 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#29424d] bg-[#0c171c]/85'}`}>
-                  <button
-                    type="button"
-                    className={`flex w-full items-center justify-between gap-4 rounded-[20px] border px-4 py-3 text-left transition-all duration-200 hover:border-[#6eb9cb] ${isLight ? 'border-[#d3e3ec] bg-[#ffffff]' : 'border-[#304f5a] bg-[#102028]'}`}
-                    onClick={() => toggleExpand(`${webpage}-main`)}
-                  >
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.22em] text-[#7fb8cb]">Main Document</div>
-                      <div className={`mt-2 text-sm ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Endpoints discovered directly in the root page.</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`rounded-full border px-3 py-1 text-xs ${isLight ? 'border-[#d6e5ed] text-slate-600' : 'border-white/10 text-slate-300'}`}>
-                        {filteredMainPage.length}
-                      </span>
-                      <span className="text-lg text-[#8fd2e2]">{mainPageExpanded ? '−' : '+'}</span>
-                    </div>
-                  </button>
-                  {mainPageExpanded && (
-                    <div className="mt-4 grid gap-3">
-                      {filteredMainPage.map(renderEndpoint)}
-                    </div>
-                  )}
+                <div className="relative">
+                  <span className={`absolute left-[-23px] top-8 h-px w-4 ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
+                  <span className={`absolute left-[-28px] top-[27px] h-3 w-3 rounded-full border ${isLight ? 'border-[#7fb8cb] bg-[#f8fbfd]' : 'border-[#6eb9cb] bg-[#102028]'}`}></span>
+                  <div className={`min-w-0 rounded-[24px] border p-3 md:p-4 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#29424d] bg-[#0c171c]/85'}`}>
+                    <button
+                      type="button"
+                      className={`flex w-full min-w-0 items-start justify-between gap-4 rounded-[20px] border px-3 py-3 text-left transition-all duration-200 hover:border-[#6eb9cb] md:px-4 ${isLight ? 'border-[#d3e3ec] bg-[#ffffff]' : 'border-[#304f5a] bg-[#102028]'}`}
+                      onClick={() => toggleExpand(`${webpage}-main`)}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[11px] uppercase tracking-[0.22em] text-[#7fb8cb]">Main Document</div>
+                        <div className={`mt-2 text-sm ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Endpoints discovered directly in the root page.</div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className={`rounded-full border px-3 py-1 text-xs ${isLight ? 'border-[#d6e5ed] text-slate-600' : 'border-white/10 text-slate-300'}`}>
+                          {filteredMainPage.length}
+                        </span>
+                        <span className="text-lg text-[#8fd2e2]">{mainPageExpanded ? '−' : '+'}</span>
+                      </div>
+                    </button>
+                    {mainPageExpanded && (
+                      <div className="relative mt-4 grid gap-3">
+                        <span className={`absolute left-[9px] top-0 bottom-0 w-px ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
+                        {filteredMainPage.map(renderEndpoint)}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -197,28 +203,33 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
                 const jsFileExpanded = expandedItems.has(jsFile);
 
                 return (
-                  <div key={jsFile} className={`rounded-[24px] border p-4 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#29424d] bg-[#0c171c]/85'}`}>
-                    <button
-                      type="button"
-                      className={`flex w-full items-center justify-between gap-4 rounded-[20px] border px-4 py-3 text-left transition-all duration-200 hover:border-[#6eb9cb] ${isLight ? 'border-[#d3e3ec] bg-[#ffffff]' : 'border-[#304f5a] bg-[#102028]'}`}
-                      onClick={() => toggleExpand(jsFile)}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-[11px] uppercase tracking-[0.22em] text-[#7fb8cb]">JavaScript Asset</div>
-                        <div className={`mt-2 break-words text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>{jsFile}</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`rounded-full border px-3 py-1 text-xs ${isLight ? 'border-[#d6e5ed] text-slate-600' : 'border-white/10 text-slate-300'}`}>
-                          {filteredEndpoints.length}
-                        </span>
-                        <span className="text-lg text-[#8fd2e2]">{jsFileExpanded ? '−' : '+'}</span>
-                      </div>
-                    </button>
-                    {jsFileExpanded && (
-                      <div className="mt-4 grid gap-3">
-                        {filteredEndpoints.map(renderEndpoint)}
-                      </div>
-                    )}
+                  <div key={jsFile} className="relative">
+                    <span className={`absolute left-[-23px] top-8 h-px w-4 ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
+                    <span className={`absolute left-[-28px] top-[27px] h-3 w-3 rounded-full border ${isLight ? 'border-[#7fb8cb] bg-[#f8fbfd]' : 'border-[#6eb9cb] bg-[#102028]'}`}></span>
+                    <div className={`min-w-0 rounded-[24px] border p-3 md:p-4 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#29424d] bg-[#0c171c]/85'}`}>
+                      <button
+                        type="button"
+                        className={`flex w-full min-w-0 items-start justify-between gap-4 rounded-[20px] border px-3 py-3 text-left transition-all duration-200 hover:border-[#6eb9cb] md:px-4 ${isLight ? 'border-[#d3e3ec] bg-[#ffffff]' : 'border-[#304f5a] bg-[#102028]'}`}
+                        onClick={() => toggleExpand(jsFile)}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-[11px] uppercase tracking-[0.22em] text-[#7fb8cb]">JavaScript Asset</div>
+                          <div className={`mt-2 whitespace-normal break-all text-sm font-medium leading-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>{jsFile}</div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className={`rounded-full border px-3 py-1 text-xs ${isLight ? 'border-[#d6e5ed] text-slate-600' : 'border-white/10 text-slate-300'}`}>
+                            {filteredEndpoints.length}
+                          </span>
+                          <span className="text-lg text-[#8fd2e2]">{jsFileExpanded ? '−' : '+'}</span>
+                        </div>
+                      </button>
+                      {jsFileExpanded && (
+                        <div className="relative mt-4 grid gap-3">
+                          <span className={`absolute left-[9px] top-0 bottom-0 w-px ${isLight ? 'bg-[#d9e6ee]' : 'bg-[#29424d]'}`}></span>
+                          {filteredEndpoints.map(renderEndpoint)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -255,7 +266,7 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
     <div className={shellClass}>
       {(document.location.pathname.toLowerCase().includes("devtool") && <NavBar />)}
 
-      <div className="mx-auto mt-5 w-full max-w-7xl px-4 pb-12 md:px-8">
+      <div className="mt-5 w-full px-2 pb-12 md:px-4">
         <div className={`overflow-hidden rounded-[32px] border ${isLight ? 'border-[#d4e3ec] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,249,253,0.96))] shadow-[0_30px_120px_rgba(0,0,0,0.12)]' : 'border-[#2d4954] bg-[linear-gradient(135deg,rgba(18,30,36,0.96),rgba(15,24,29,0.92))] shadow-[0_30px_120px_rgba(0,0,0,0.35)]'}`}>
           <div className={`border-b px-6 py-5 md:px-8 ${isLight ? 'border-[#d6e5ed]' : 'border-[#29424d]'}`}>
             {setSelection && (
@@ -349,8 +360,8 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
             </div>
           </div>
 
-          <div className="px-4 py-5 md:px-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 px-2">
+          <div className="px-2 py-5 md:px-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-1">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#7fb8cb]">Tree Structure</div>
                 <div className={`mt-1 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Expand webpage nodes to inspect main-page endpoints and JavaScript asset branches.</div>
@@ -362,7 +373,7 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
               </div>
             </div>
 
-            <div className={`rounded-[28px] border p-4 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#28424c] bg-[#0b1418]/80'}`}>
+            <div className={`rounded-[28px] border p-2 md:p-3 ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#28424c] bg-[#0b1418]/80'}`}>
               <div className="grid gap-4">
                 {renderHierarchicalView()}
               </div>
