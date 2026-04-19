@@ -24,7 +24,7 @@ export function clearURLs(): void {
 }
 
 export function getEndpointSelectionKey(endpoint: Endpoint): string {
-  return `${endpoint.webpage}::${endpoint.foundAt}::${endpoint.url}`;
+  return `${endpoint.foundAt}::${endpoint.url}`;
 }
 
 export async function deleteSelectedURLs(endpointsToDelete: Endpoint[]): Promise<void> {

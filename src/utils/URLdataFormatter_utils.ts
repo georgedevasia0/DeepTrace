@@ -15,6 +15,19 @@ interface FormattedURLData {
   };
 }
 
+function mergeClassifications(
+  first: Record<string, boolean>,
+  second: Record<string, boolean>
+): Record<string, boolean> {
+  const merged = { ...first };
+
+  Object.entries(second).forEach(([key, value]) => {
+    merged[key] = Boolean(merged[key] || value);
+  });
+
+  return merged;
+}
+
 export async function formatURLData(): Promise<FormattedURLData> {
   const result = await browser.storage.local.get("URL-PARSER");
   const urlParserData = result["URL-PARSER"] as URLParserStorage;
@@ -24,6 +37,40 @@ export async function formatURLData(): Promise<FormattedURLData> {
   let webpages: Webpage[] = [];
   let hierarchy: FormattedURLData['hierarchy'] = {};
   let captureIndex = 0;
+
+  const buildUniqueEndpoints = (
+    rawEndpoints: Array<{
+      url: string;
+      classifications: Record<string, boolean>;
+    }>,
+    foundAt: string,
+    webpage: string
+  ): Endpoint[] => {
+    const uniqueByKey = new Map<string, Endpoint>();
+
+    rawEndpoints.forEach((endpoint) => {
+      const dedupeKey = `${foundAt}::${endpoint.url}`;
+      const existing = uniqueByKey.get(dedupeKey);
+
+      if (existing) {
+        existing.classifications = mergeClassifications(
+          existing.classifications,
+          endpoint.classifications as Record<string, boolean>
+        );
+        return;
+      }
+
+      uniqueByKey.set(dedupeKey, {
+        url: endpoint.url,
+        foundAt,
+        webpage,
+        classifications: endpoint.classifications as Record<string, boolean>,
+        captureIndex: ++captureIndex,
+      });
+    });
+
+    return Array.from(uniqueByKey.values());
+  };
 
   if (!urlParserData) {
     return {
@@ -44,13 +91,14 @@ export async function formatURLData(): Promise<FormattedURLData> {
       hierarchy[webpage] = { mainPage: [], jsFiles: {} };
 
       // Handle main page endpoints
-      const mainPageEndpoints = item.currPage.map((endpoint) => ({
-        url: endpoint.url,
-        foundAt: webpage,
-        webpage: webpage,
-        classifications: endpoint.classifications as unknown as Record<string, boolean>,
-        captureIndex: ++captureIndex,
-      }));
+      const mainPageEndpoints = buildUniqueEndpoints(
+        item.currPage.map((endpoint) => ({
+          url: endpoint.url,
+          classifications: endpoint.classifications as unknown as Record<string, boolean>,
+        })),
+        webpage,
+        webpage
+      );
       allEndpoints.push(...mainPageEndpoints);
       hierarchy[webpage].mainPage = mainPageEndpoints;
 
@@ -61,13 +109,14 @@ export async function formatURLData(): Promise<FormattedURLData> {
           locations.push(decodedJsFile);
         }
         
-        const jsFileEndpoints = endpoints.map((endpoint) => ({
-          url: endpoint.url,
-          foundAt: decodedJsFile,
-          webpage: webpage,
-          classifications: endpoint.classifications as unknown as Record<string, boolean>,
-          captureIndex: ++captureIndex,
-        }));
+        const jsFileEndpoints = buildUniqueEndpoints(
+          endpoints.map((endpoint) => ({
+            url: endpoint.url,
+            classifications: endpoint.classifications as unknown as Record<string, boolean>,
+          })),
+          decodedJsFile,
+          webpage
+        );
         allEndpoints.push(...jsFileEndpoints);
         hierarchy[webpage].jsFiles[decodedJsFile] = jsFileEndpoints;
       });
