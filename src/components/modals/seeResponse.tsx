@@ -37,6 +37,13 @@ export const SeeResponseModal: React.FC<SeeResponseModalProps> = ({ endpoint, on
     HTTP_METHODS.forEach(method => sendHttpRequest(method));
   }, []);
 
+  const sectionLabelClass = "text-xs font-semibold uppercase tracking-[0.18em] text-[#7fb8cb]";
+  const sectionValueClass = "mt-2 whitespace-pre-wrap break-words rounded-2xl border border-[#223740] bg-[#101c21] px-4 py-3 text-sm leading-6 text-[#e7f7fb]";
+  const inputClass = "w-full rounded-2xl border border-[#335561] bg-[#13252d] px-4 py-3 text-sm text-white outline-none transition-all duration-200 placeholder:text-slate-500 focus:border-[#6cb7ca]";
+  const primaryButtonClass = "rounded-2xl border border-[#3b6b79] bg-[linear-gradient(135deg,#14313c,#1b4552)] px-4 py-3 text-sm font-semibold text-[#daf8ff] transition-all duration-200 hover:border-[#6bb5c8]";
+  const secondaryButtonClass = "rounded-2xl border border-[#355a67] bg-[#13252d] px-4 py-3 text-sm font-semibold text-[#daf8ff] transition-all duration-200 hover:border-[#7ad4e7]";
+  const dangerButtonClass = "rounded-2xl border border-[#7f423a] bg-[linear-gradient(135deg,#3a1715,#612925)] px-4 py-3 text-sm font-semibold text-[#ffd9d4] transition-all duration-200 hover:border-[#e28173]";
+
   const sendHttpRequest = async (method: HttpMethod, customRequest?: typeof editableRequest) => {
     try {
       const requestToSend = customRequest || {
@@ -45,23 +52,19 @@ export const SeeResponseModal: React.FC<SeeResponseModalProps> = ({ endpoint, on
         headers: {},
         body: method === 'GET' ? undefined : ''
       };
-  
-      console.log('Sending request with headers:', requestToSend.headers);  // Debug log
-  
+
       const response = await browser.runtime.sendMessage({
         action: 'sendRequest',
         endpoint,
         method,
         customRequest: requestToSend
       });
-  
-      console.log('Received response:', response);  // Debug log
-  
+
       setResponses(prev => ({ ...prev, [method]: response }));
     } catch (error) {
       console.error(`Error sending ${method} request:`, error);
-      setResponses(prev => ({ 
-        ...prev, 
+      setResponses(prev => ({
+        ...prev,
         [method]: {
           success: false,
           url: customRequest?.url || sanitizeURL(endpoint),
@@ -114,18 +117,18 @@ export const SeeResponseModal: React.FC<SeeResponseModalProps> = ({ endpoint, on
 
   const handleSaveRequest = async () => {
     setIsEditing(false);
-  
+
     const filteredHeaders = Object.fromEntries(
       Object.entries(editableRequest.headers).filter(([key, value]) => key.trim() !== '' && value.trim() !== '')
     );
-  
+
     const updatedRequest = {
       ...editableRequest,
       headers: filteredHeaders,
     };
-  
+
     setCurrentRequest(updatedRequest);
-  
+
     await sendHttpRequest(updatedRequest.method as HttpMethod, updatedRequest);
     setCurrentMethod(updatedRequest.method as HttpMethod);
   };
@@ -143,165 +146,168 @@ export const SeeResponseModal: React.FC<SeeResponseModalProps> = ({ endpoint, on
   const currentResponse = responses[currentMethod];
 
   return (
-    <div className="mt-3">
-      <h3 className="text-lg font-semibold text-gray-400 mb-5">Request/Response Details for {sanitizeURL(endpoint)}</h3>
-      <div className="flex mb-4">
+    <div className="flex max-h-[calc(90vh-40px)] flex-col">
+      <div className="flex items-start justify-between gap-4 border-b border-[#29424d] pb-4">
+        <div className="min-w-0">
+          <h3 className="text-xl font-bold text-white">Request / Response Details</h3>
+          <p className="mt-2 break-all text-sm text-[#9fc1cc]">{sanitizeURL(endpoint)}</p>
+        </div>
+        <button className={secondaryButtonClass} onClick={onClose}>
+          Close
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
-          className={`px-4 py-2 ${activeTab === 'request' ? 'bg-gray-600 text-white' : 'bg-gray-300 text-gray-700'}`}
+          className={activeTab === 'request' ? primaryButtonClass : secondaryButtonClass}
           onClick={() => setActiveTab('request')}
         >
           Request
         </button>
         <button
-          className={`px-4 py-2 ${activeTab === 'response' ? 'bg-gray-600 text-white' : 'bg-gray-300 text-gray-700'}`}
+          className={activeTab === 'response' ? primaryButtonClass : secondaryButtonClass}
           onClick={() => setActiveTab('response')}
         >
           Response
         </button>
       </div>
-      {activeTab === 'request' ? (
-        <div className="bg-[#141e24] opacity-85 rounded-md p-4">
-          {isEditing ? (
-            <>
-              <h4 className="text-white font-semibold mb-2">Edit Request:</h4>
-              <select 
-                className="font-bold text-2xl text-customFont mb-4 bg-gray-600 w-full py-2 px-2"
-                value={editableRequest.method}
-                onChange={(e) => setEditableRequest(prev => ({ ...prev, method: e.target.value as HttpMethod, body: e.target.value === 'GET' ? '' : prev.body }))}
+
+      <div className="mt-4 flex-1 overflow-auto rounded-[22px] border border-[#29424d] bg-[#0b1418] p-4">
+        {activeTab === 'request' ? (
+          isEditing ? (
+            <div className="space-y-4">
+              <div>
+                <div className={sectionLabelClass}>Method</div>
+                <select
+                  className={`${inputClass} mt-2`}
+                  value={editableRequest.method}
+                  onChange={(e) => setEditableRequest(prev => ({ ...prev, method: e.target.value as HttpMethod, body: e.target.value === 'GET' ? '' : prev.body }))}
+                >
+                  {HTTP_METHODS.map(method => (
+                    <option key={method} value={method}>{method}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className={sectionLabelClass}>URL</div>
+                <input
+                  className={`${inputClass} mt-2`}
+                  value={editableRequest.url}
+                  onChange={(e) => setEditableRequest(prev => ({ ...prev, url: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <div className={sectionLabelClass}>Headers</div>
+                <div className="mt-2 space-y-2">
+                  {Object.entries(editableRequest.headers).map(([key, value], index) => (
+                    <div key={index} className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                      <input
+                        className={inputClass}
+                        value={key}
+                        onChange={(e) => handleHeaderChange(index, e.target.value, value)}
+                        placeholder="Header name"
+                      />
+                      <input
+                        className={inputClass}
+                        value={value}
+                        onChange={(e) => handleHeaderChange(index, key, e.target.value)}
+                        placeholder="Header value"
+                      />
+                      <button className={dangerButtonClass} onClick={() => handleRemoveHeader(key)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button className={primaryButtonClass} onClick={handleAddHeader}>Add Header</button>
+                  <button className={dangerButtonClass} onClick={() => setEditableRequest(prev => ({ ...prev, headers: {} }))}>Clear Headers</button>
+                </div>
+              </div>
+
+              <div>
+                <div className={sectionLabelClass}>Body</div>
+                <textarea
+                  className={`${inputClass} mt-2 min-h-40`}
+                  value={editableRequest.body}
+                  onChange={(e) => setEditableRequest(prev => ({ ...prev, body: e.target.value }))}
+                  disabled={editableRequest.method === 'GET'}
+                  placeholder={editableRequest.method === 'GET' ? 'Body not allowed for GET requests' : ''}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button className={primaryButtonClass} onClick={handleSaveRequest}>Save and Send</button>
+                <button className={secondaryButtonClass} onClick={() => setIsEditing(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <div className={sectionLabelClass}>Request URL</div>
+                <div className={sectionValueClass}>{currentRequest.url}</div>
+              </div>
+              <div>
+                <div className={sectionLabelClass}>Request Method</div>
+                <div className={sectionValueClass}>{currentRequest.method}</div>
+              </div>
+              <div>
+                <div className={sectionLabelClass}>Request Headers</div>
+                <div className={sectionValueClass}>
+                  {Object.entries(currentRequest.headers).length > 0
+                    ? Object.entries(currentRequest.headers).map(([key, value]) => `${key}: ${value}`).join('\n')
+                    : 'No headers'}
+                </div>
+              </div>
+              {currentRequest.method !== 'GET' && (
+                <div>
+                  <div className={sectionLabelClass}>Request Body</div>
+                  <div className={sectionValueClass}>{currentRequest.body || 'No body'}</div>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <button className={primaryButtonClass} onClick={handleEditRequest}>Edit Request</button>
+                <button className={dangerButtonClass} onClick={() => sendRequest(currentRequest)}>Send</button>
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <div className={sectionLabelClass}>Method</div>
+              <select
+                className={`${inputClass} mt-2`}
+                value={currentMethod}
+                onChange={(e) => handleMethodChange(e.target.value as HttpMethod)}
               >
                 {HTTP_METHODS.map(method => (
-                  <option key={method} value={method}>{method}</option>
+                  <option key={method} value={method}>
+                    [{responses[method]?.status || 'N/A'}] {responses[method]?.statusText || 'N/A'} {method}
+                  </option>
                 ))}
               </select>
-              <input 
-                className="w-full mb-2 p-2 bg-gray-700 text-white"
-                value={editableRequest.url}
-                onChange={(e) => setEditableRequest(prev => ({ ...prev, url: e.target.value }))}
-              />
-              <h4 className="text-white font-semibold mb-2">Headers:</h4>
-              {Object.entries(editableRequest.headers).map(([key, value], index) => (
-                <div key={index} className="flex mb-2 items-center group">
-                  <input 
-                    className="w-5/12 p-2 bg-gray-700 text-white"
-                    value={key}
-                    onChange={(e) => handleHeaderChange(index, e.target.value, value)}
-                    placeholder="Header name"
-                  />
-                  <input 
-                    className="w-5/12 p-2 bg-gray-700 text-white"
-                    value={value}
-                    onChange={(e) => handleHeaderChange(index, key, e.target.value)}
-                    placeholder="Header value"
-                  />
-                  <button 
-                    className="w-2/12 p-2 bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    onClick={() => handleRemoveHeader(key)}
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <button 
-                  className="bg-blue-500 text-white p-2 rounded mt-2"
-                  onClick={handleAddHeader}
-                >
-                  Add Header
-                </button>
-                <button 
-                  className="bg-rose-500 text-white p-2 rounded mt-2"
-                  onClick={() => editableRequest.headers = {}}
-                >
-                  Clear Headers
-                </button>
+            </div>
+            <div>
+              <div className={sectionLabelClass}>Response URL</div>
+              <div className={sectionValueClass}>{currentResponse?.url || 'N/A'}</div>
+            </div>
+            <div>
+              <div className={sectionLabelClass}>Response Headers</div>
+              <div className={sectionValueClass}>
+                {Object.entries(currentResponse?.headers || {}).length > 0
+                  ? Object.entries(currentResponse?.headers || {}).map(([key, value]) => `${key}: ${value}`).join('\n')
+                  : 'No headers'}
               </div>
-              <h4 className="text-white font-semibold mb-2 mt-4">Body:</h4>
-              <textarea 
-                className="w-full p-2 bg-gray-700 text-white min-h-40"
-                value={editableRequest.body}
-                onChange={(e) => setEditableRequest(prev => ({ ...prev, body: e.target.value }))}
-                disabled={editableRequest.method === 'GET'}
-                placeholder={editableRequest.method === 'GET' ? 'Body not allowed for GET requests' : ''}
-              />
-              <div className="mt-4">
-                <button 
-                  className="bg-green-500 text-white p-2 rounded mr-2"
-                  onClick={handleSaveRequest}
-                >
-                  Save and Send
-                </button>
-                <button 
-                  className="bg-red-500 text-white p-2 rounded"
-                  onClick={() => setIsEditing(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h4 className="text-white font-semibold mb-2">Request URL:</h4>
-              <pre className="text-gray-200 mb-4">{currentRequest.url}</pre>
-              <h4 className="text-white font-semibold mb-2">Request Method:</h4>
-              <pre className="text-gray-200 mb-4">{currentRequest.method}</pre>
-              <h4 className="text-white font-semibold mb-2">Request Headers:</h4>
-              <pre className="text-gray-200">
-                {Object.entries(currentRequest.headers).map(([key, value]) => `${key}: ${value}`).join('\n')}
-              </pre>
-              {currentRequest.method !== 'GET' && (
-                <>
-                  <h4 className="text-white font-semibold mb-2 mt-4">Request Body:</h4>
-                  <pre className="text-gray-200">{currentRequest.body || ''}</pre>
-                </>
-              )}
-              <div className="flex gap-1">
-                <button 
-                  className="mt-4 bg-blue-500 text-white p-2 rounded"
-                  onClick={handleEditRequest}
-                >
-                  Edit Request
-                </button>
-                <button 
-                  className="mt-4 bg-rose-500 text-white p-2 rounded"
-                  onClick={() => sendRequest(currentRequest)}
-                >
-                  Send
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="bg-[#141e24] opacity-85 rounded-md p-4">
-          <select 
-            className="font-bold text-2xl opacity-1 text-white mb-4 bg-gray-600 w-full py-2 px-2"
-            value={currentMethod}
-            onChange={(e) => handleMethodChange(e.target.value as HttpMethod)}
-          >
-            {HTTP_METHODS.map(method => (
-              <option key={method} value={method}>
-                [{currentResponse?.status || 'N/A'}] {currentResponse?.statusText || 'N/A'} {method}
-              </option>
-            ))}
-          </select>
-          <h4 className="text-white font-semibold mb-2">Response URL:</h4>
-          <pre className="text-gray-200 mb-4">{currentResponse?.url || 'N/A'}</pre>
-          <h4 className="text-white font-semibold mb-2">Response Headers:</h4>
-          <pre className="text-gray-200 mb-4">
-            {Object.entries(currentResponse?.headers || {}).map(([key, value]) => (
-              <div key={key} className="p-1">
-                <span className="font-bold text-customFont opacity-8">{key}:</span>
-                <span className="text-gray-200"> {value}</span>
-              </div>
-            ))}
-          </pre>
-          <h4 className="text-white font-semibold mb-2">Response Body:</h4>
-          <pre className="text-gray-200 whitespace-pre-wrap">
-            {currentResponse?.body || 'N/A'}
-          </pre>
-        </div>
-      )}
-      <button className="mt-4 bg-gray-500 text-white p-2 rounded" onClick={onClose}>Close</button>
+            </div>
+            <div>
+              <div className={sectionLabelClass}>Response Body</div>
+              <div className={`${sectionValueClass} max-h-[340px] overflow-auto`}>{currentResponse?.body || 'N/A'}</div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -21,8 +21,8 @@ export const LOCAL_STORAGE_KEYS = {
 export const CSS_CLASSES = {
   BUTTON: 'px-4 py-2 bg-black text-white rounded hover:bg-blue-600',
   INPUT: 'px-2 border-2 border-gray-300 bg-transparent text-lg w-full pb-3 pt-3 rounded-md cursor-pointer text-gray-300 hover:border-gray-500 outline-none focus:border-gray-500 transition-all duration-400',
-  MODAL_OVERLAY: 'fixed inset-0 flex items-center justify-center bg-[#141e24] bg-opacity-50',
-  MODAL_CONTENT: 'bg-[#141e24] opacity-85 p-5 rounded-lg shadow-lg',
+  MODAL_OVERLAY: 'fixed inset-0 z-50 flex items-center justify-center bg-[rgba(6,12,16,0.78)] backdrop-blur-sm px-4 py-6',
+  MODAL_CONTENT: 'w-full rounded-[28px] border border-[#2f4e59] bg-[linear-gradient(180deg,#132129,#0f1a20)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)]',
   API_ENDPOINT: 'inline-flex items-center rounded-full border border-[#1f5b4b] bg-[linear-gradient(135deg,#10342d,#16453b)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8de0c4]',
   URL_DATA_ACCESS: 'inline-flex items-center rounded-full border border-[#244b68] bg-[linear-gradient(135deg,#102b3b,#183e55)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#86c9f5]',
   DATABASE_OPERATION: 'inline-flex items-center rounded-full border border-[#58408b] bg-[linear-gradient(135deg,#2b1d49,#3b2962)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#c8b1ff]',

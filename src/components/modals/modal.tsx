@@ -12,7 +12,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 
   return (
     <div className={CSS_CLASSES.MODAL_OVERLAY} onClick={onClose}>
-      <div className={`${CSS_CLASSES.MODAL_CONTENT} max-w-6xl max-h-screen overflow-auto`} onClick={(e) => e.stopPropagation()}>
+      <div className={`${CSS_CLASSES.MODAL_CONTENT} max-h-[90vh] max-w-6xl overflow-hidden`} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>

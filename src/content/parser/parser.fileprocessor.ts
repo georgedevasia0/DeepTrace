@@ -1,6 +1,6 @@
 import { PARSER_CONFIG } from './parser.config';
 import { StorageService } from './storage.service';
-import { REL_REGEX, ABS_REGEX } from '../../constants/regex_constants';
+import { REL_REGEX, ABS_REGEX, DOMAIN_REGEX } from '../../constants/regex_constants';
 import { ProgressBar } from '../../components/ProgressBar';
 
 export class JSFileProcessor {
@@ -56,7 +56,8 @@ export class JSFileProcessor {
         
         const jsFileRelURLs = Array.from(code.matchAll(REL_REGEX), match => match[1]);
         const jsFileAbURLs = Array.from(code.matchAll(ABS_REGEX), match => match[1]);
-        const jsFileURLs = new Set([...jsFileRelURLs, ...jsFileAbURLs]);
+        const jsFileDomains = Array.from(code.matchAll(DOMAIN_REGEX), match => match[1]);
+        const jsFileURLs = new Set([...jsFileRelURLs, ...jsFileAbURLs, ...jsFileDomains]);
         
         const encodedURL = encodeURIComponent(js_file);
         await StorageService.saveToStorage(encodedURL, Array.from(jsFileURLs));
