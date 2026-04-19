@@ -320,7 +320,9 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                         disabled={selectedFilteredCount === 0}
                         className={`rounded-2xl border px-4 py-4 text-sm font-semibold transition-all duration-200 ${
                           selectedFilteredCount === 0
-                            ? 'cursor-not-allowed border-[#c9c9c9] bg-[#f3f3f3] text-[#888888]'
+                            ? isLight
+                              ? 'cursor-not-allowed border-[#d8e3ea] bg-[#eef4f8] text-[#93a7b3]'
+                              : 'cursor-not-allowed border-[#314b55] bg-[#17262d] text-[#6f8893]'
                             : isLight
                               ? 'border-[#d88a7f] bg-[linear-gradient(135deg,#fff1ef,#ffe2de)] text-[#8d3b31] hover:border-[#cf6e61]'
                               : 'border-[#7f423a] bg-[linear-gradient(135deg,#3a1715,#612925)] text-[#ffd9d4] hover:border-[#e28173] hover:shadow-[0_14px_38px_rgba(71,26,22,0.32)]'
