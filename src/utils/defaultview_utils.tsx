@@ -1,7 +1,7 @@
 // src/utils/index.ts
 
 import browser from 'webextension-polyfill';
-import { Endpoint } from '../constants/message_types';
+import { Endpoint, URLParserStorage, URLParserStorageItem } from '../constants/message_types';
 
 export function sanitizeURL(endpoint: Endpoint): string {
   const cleanedWebpage = endpoint.webpage.replace(/\/$/, '').split('#')[0];
@@ -21,6 +21,68 @@ export function clearURLs(): void {
   }).catch((error) => {
     console.error("Failed to clear endpoints:", error);
   });
+}
+
+export function getEndpointSelectionKey(endpoint: Endpoint): string {
+  return `${endpoint.webpage}::${endpoint.foundAt}::${endpoint.url}`;
+}
+
+export async function deleteSelectedURLs(endpointsToDelete: Endpoint[]): Promise<void> {
+  if (endpointsToDelete.length === 0) {
+    return;
+  }
+
+  const result = await browser.storage.local.get('URL-PARSER');
+  const urlParserData = (result['URL-PARSER'] || {}) as URLParserStorage;
+  const keysToDelete = new Set(endpointsToDelete.map(getEndpointSelectionKey));
+  const updatedData: URLParserStorage = {};
+
+  Object.entries(urlParserData).forEach(([storageKey, value]) => {
+    if (storageKey === 'current' || typeof value === 'string' || value === undefined) {
+      updatedData[storageKey] = value;
+      return;
+    }
+
+    const webpage = decodeURIComponent(storageKey);
+    const typedValue = value as URLParserStorageItem;
+
+    const currPage = typedValue.currPage.filter((endpoint) => {
+      const endpointKey = getEndpointSelectionKey({
+        url: endpoint.url,
+        foundAt: webpage,
+        webpage,
+        classifications: endpoint.classifications as Record<string, boolean>,
+      });
+
+      return !keysToDelete.has(endpointKey);
+    });
+
+    const externalJSFiles = Object.fromEntries(
+      Object.entries(typedValue.externalJSFiles).map(([jsFile, endpoints]) => {
+        const decodedJsFile = decodeURIComponent(jsFile);
+        const filteredEndpoints = endpoints.filter((endpoint) => {
+          const endpointKey = getEndpointSelectionKey({
+            url: endpoint.url,
+            foundAt: decodedJsFile,
+            webpage,
+            classifications: endpoint.classifications as Record<string, boolean>,
+          });
+
+          return !keysToDelete.has(endpointKey);
+        });
+
+        return [jsFile, filteredEndpoints];
+      })
+    );
+
+    updatedData[storageKey] = {
+      ...typedValue,
+      currPage,
+      externalJSFiles,
+    };
+  });
+
+  await browser.storage.local.set({ 'URL-PARSER': updatedData });
 }
 
 export function highlightSearchQuery(text: string, query: string): JSX.Element[] {

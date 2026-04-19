@@ -1,18 +1,8 @@
-import { useEffect, useState } from "react";
-import browser from 'webextension-polyfill';
 import { Endpoint } from "../constants/message_types";
 import { useURLData } from '../hooks/useURLData';
 
 export function URLsCSV() {
-
-  const { 
-    urls, 
-    jsFiles, 
-    filteredURLs, 
-    visibleUrls, 
-    setVisibleUrls,
-    webpages
-  } = useURLData("", "", "", 0, 0, {});
+  const { urls } = useURLData("", "", "", 0, 0, {}, "url-asc");
   
   // Function to sanitize URLs
   const sanitizedURL = (endpoint: Endpoint) => {

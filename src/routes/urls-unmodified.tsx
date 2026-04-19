@@ -1,17 +1,7 @@
-import { useEffect, useState } from "react";
-import browser from 'webextension-polyfill';
-import { Endpoint } from "../constants/message_types";
 import { useURLData } from '../hooks/useURLData';
 
 export function URLsUnmodified() {
-  const { 
-    urls, 
-    jsFiles, 
-    filteredURLs, 
-    visibleUrls, 
-    setVisibleUrls,
-    webpages
-  } = useURLData("", "", "", 0, 0, {});
+  const { urls } = useURLData("", "", "", 0, 0, {}, "url-asc");
 
   // Function to download URLs as a .txt file
   const downloadURLsAsTxt = () => {

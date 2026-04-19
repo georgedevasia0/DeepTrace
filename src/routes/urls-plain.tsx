@@ -1,19 +1,9 @@
-import { useEffect, useState } from "react";
-import browser from 'webextension-polyfill';
-import { CSS_CLASSES } from "../constants/defaultview_contants";
 import { Endpoint } from "../constants/message_types";
 import { useURLData } from '../hooks/useURLData';
 
 
 export function URLsPlain() {
-  const { 
-    urls, 
-    jsFiles, 
-    filteredURLs, 
-    visibleUrls, 
-    setVisibleUrls,
-    webpages
-  } = useURLData("", "", "", 0, 0, {});
+  const { urls } = useURLData("", "", "", 0, 0, {}, "url-asc");
 
   // Function to sanitize URLs
   const sanitizedURL = (endpoint: Endpoint) => {

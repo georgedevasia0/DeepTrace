@@ -10,6 +10,7 @@ export function useURLData(
   startIndex: number,
   visibleUrlSize: number,
   selectedCategories: Record<string, boolean>,
+  sortOption: string,
 ) {
   const [urls, setURLs] = useState<Endpoint[]>([]);
   const [jsFiles, setJSFiles] = useState<Location[]>([]);
@@ -39,7 +40,7 @@ export function useURLData(
   }, []);
 
   const filteredURLs = useMemo(() => {
-    return urls.filter(endpoint => {
+    const filtered = urls.filter(endpoint => {
       const matchesLocation = selectedLocation === 'All' || endpoint.foundAt === selectedLocation;
       const matchesWebpage = selectedWebpage === 'All' || endpoint.webpage === selectedWebpage;
       const matchesQuery = endpoint.url.toLowerCase().includes(searchQuery.toLowerCase());
@@ -57,7 +58,25 @@ export function useURLData(
 
       return matchesLocation && matchesQuery && matchesWebpage && (matchesCategories || Object.values(selectedCategories).every(value => value));
     });
-  }, [urls, selectedLocation, selectedWebpage, searchQuery, selectedCategories]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case 'url-desc':
+          return b.url.localeCompare(a.url);
+        case 'source-asc':
+          return a.foundAt.localeCompare(b.foundAt) || a.url.localeCompare(b.url);
+        case 'source-desc':
+          return b.foundAt.localeCompare(a.foundAt) || a.url.localeCompare(b.url);
+        case 'webpage-asc':
+          return a.webpage.localeCompare(b.webpage) || a.url.localeCompare(b.url);
+        case 'webpage-desc':
+          return b.webpage.localeCompare(a.webpage) || a.url.localeCompare(b.url);
+        case 'url-asc':
+        default:
+          return a.url.localeCompare(b.url);
+      }
+    });
+  }, [urls, selectedLocation, selectedWebpage, searchQuery, selectedCategories, sortOption]);
 
   useEffect(() => {
     const endIndex = Math.min(startIndex + visibleUrlSize, filteredURLs.length);

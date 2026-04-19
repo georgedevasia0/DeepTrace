@@ -93,6 +93,7 @@ export interface URLParser {
 export type Location = string;
 
 export type Webpage = string;
+export type ThemeMode = 'dark' | 'light';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'OPTIONS';
 
