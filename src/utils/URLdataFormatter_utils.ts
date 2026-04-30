@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill';
 import { Endpoint, Location, Webpage, URLParserStorage, URLParserStorageItem } from '../constants/message_types';
+import { shouldCaptureEndpoint } from './endpointFilter';
 
 interface FormattedURLData {
   allEndpoints: Endpoint[];
@@ -49,6 +50,10 @@ export async function formatURLData(): Promise<FormattedURLData> {
     const uniqueByKey = new Map<string, Endpoint>();
 
     rawEndpoints.forEach((endpoint) => {
+      if (!shouldCaptureEndpoint(endpoint.url)) {
+        return;
+      }
+
       const dedupeKey = `${foundAt}::${endpoint.url}`;
       const existing = uniqueByKey.get(dedupeKey);
 

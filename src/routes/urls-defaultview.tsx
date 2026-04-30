@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { URLProps } from '../components/URLProps';
 import { LocationItem, WebpageItem } from '../components/Locationitem';
 import { useURLData } from '../hooks/useURLData';
 import { clearURLs, deleteSelectedURLs, getEndpointSelectionKey } from '../utils/defaultview_utils';
-import { VISIBLE_URL_SIZE, FILTER_CATEGORIES, ClassificationType, ClassificationMapping } from '../constants/defaultview_contants';
+import { FILTER_CATEGORIES, ClassificationType, ClassificationMapping } from '../constants/defaultview_contants';
 import { NavBar } from '../components/navbar';
 import browser from 'webextension-polyfill';
 import { useThemeMode } from '../hooks/useThemeMode';
@@ -20,7 +20,6 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
   const [isOpenLocation, setIsOpenLocation] = useState<boolean>(false);
   const [isOpenWebpage, setIsOpenWebpage] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [startIndex, setStartIndex] = useState(0);
   const [filterToggle, setFilterToggle] = useState(false);
   const [sortOption, setSortOption] = useState<string>('url-asc');
   const [selectedEndpointKeys, setSelectedEndpointKeys] = useState<Set<string>>(new Set());
@@ -30,7 +29,6 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
       return acc;
     }, {} as Record<string, boolean>)
   );
-  const tableRef = useRef<HTMLDivElement>(null);
 
   const {
     urls,
@@ -38,7 +36,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
     filteredURLs,
     visibleUrls,
     webpages
-  } = useURLData(selectedLocation, selectedWebpage, searchQuery, startIndex, VISIBLE_URL_SIZE, selectedCategories, sortOption);
+  } = useURLData(selectedLocation, selectedWebpage, searchQuery, 0, 0, selectedCategories, sortOption);
 
   const getCategoryCounts = (): Record<ClassificationType, number> => {
     const counts: Record<ClassificationType, number> = {} as Record<ClassificationType, number>;
@@ -69,37 +67,19 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
   const handleSelectLocation = (url: string) => {
     setSelectedLocation(url);
     setIsOpenLocation(false);
-    setStartIndex(0);
   };
 
   const handleSelectWebpage = (url: string) => {
     setSelectedWebpage(url);
     setIsOpenWebpage(false);
-    setStartIndex(0);
   };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
-    setStartIndex(0);
   };
 
   const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSortOption(event.target.value);
-    setStartIndex(0);
-  };
-
-  const handleScroll = () => {
-    if (tableRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = tableRef.current;
-      const bottomThreshold = 200;
-      const topThreshold = 200;
-
-      if (scrollHeight - scrollTop - clientHeight < bottomThreshold) {
-        setStartIndex(prev => Math.min(prev + 20, Math.max(0, filteredURLs.length - VISIBLE_URL_SIZE)));
-      } else if (scrollTop < topThreshold && startIndex > 0) {
-        setStartIndex(prev => Math.max(prev - 20, 0));
-      }
-    }
   };
 
   const allSelected = Object.keys(FILTER_CATEGORIES).length > 0 &&
@@ -163,7 +143,6 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
       endpointsToDelete.forEach(endpoint => next.delete(getEndpointSelectionKey(endpoint)));
       return next;
     });
-    setStartIndex(0);
   };
 
   const downloadURLsAsTxt = () => {
@@ -438,7 +417,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                   </span>
                 </div>
               </div>
-              <div className={`w-full max-h-[760px] overflow-y-auto overflow-x-hidden rounded-[24px] border ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#28424c] bg-[#0b1418]/80'}`} ref={tableRef} onScroll={handleScroll}>
+              <div className={`w-full max-h-[760px] scroll-smooth overflow-y-auto overflow-x-hidden rounded-[24px] border ${isLight ? 'border-[#d6e5ed] bg-[#f8fbfd]' : 'border-[#28424c] bg-[#0b1418]/80'}`}>
                 <div className="w-full align-middle">
                   <div className="overflow-hidden">
                     <table className="min-w-full table-fixed">
@@ -474,7 +453,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                         ) : (
                           visibleUrls.map((endpoint, index) => (
                             <URLProps
-                              key={startIndex + index}
+                              key={`${endpoint.foundAt}-${endpoint.webpage}-${endpoint.url}-${index}`}
                               endpoint={endpoint}
                               searchQuery={searchQuery}
                               selectedCategories={selectedCategories}

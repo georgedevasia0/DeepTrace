@@ -2,6 +2,7 @@ import browser from 'webextension-polyfill';
 import { URLParserStorageWithOptionalCurrent, URLParserStorageItem } from './parser.types';
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
 import { decode } from 'punycode';
+import { shouldCaptureEndpoint } from '../../utils/endpointFilter';
 
 function safeDecodeURIComponent(value: string): string {
   try {
@@ -43,10 +44,13 @@ export class StorageService {
       urlParser[currentURL].externalJSFiles = {};
     }
 
-    urlParser[currentURL].externalJSFiles[encodedURL] = urls.map(url => ({
-      url: safeDecodeURIComponent(url),
-      classifications: {} as URLClassification
-    }));
+    urlParser[currentURL].externalJSFiles[encodedURL] = urls
+      .map(safeDecodeURIComponent)
+      .filter(shouldCaptureEndpoint)
+      .map(url => ({
+        url,
+        classifications: {} as URLClassification
+      }));
 
     await browser.storage.local.set({ 'URL-PARSER': urlParser });
   }

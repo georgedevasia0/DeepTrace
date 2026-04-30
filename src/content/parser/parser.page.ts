@@ -3,6 +3,7 @@ import { StorageService } from './storage.service';
 import browser from 'webextension-polyfill';
 import { URLParserStorageWithOptionalCurrent } from './parser.types';
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
+import { filterCapturedEndpoints } from '../../utils/endpointFilter';
 
 export class PageParser {
   async parseCurrentPage(): Promise<Set<string>> {
@@ -10,7 +11,7 @@ export class PageParser {
     const abPageURLs = Array.from(pageContent.matchAll(ABS_REGEX), match => match[1]);
     const relPageURLs = Array.from(pageContent.matchAll(REL_REGEX), match => match[1]);
     const pageDomains = Array.from(pageContent.matchAll(DOMAIN_REGEX), match => match[1]);
-    const pageURLs = new Set([...abPageURLs, ...relPageURLs, ...pageDomains]);
+    const pageURLs = new Set(filterCapturedEndpoints([...abPageURLs, ...relPageURLs, ...pageDomains]));
 
     const currPage = encodeURIComponent(document.location.href);
     await this.saveToBrowser(currPage, pageURLs);

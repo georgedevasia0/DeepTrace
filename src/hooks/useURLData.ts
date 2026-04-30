@@ -3,19 +3,55 @@ import { Endpoint, Location, Webpage } from '../constants/message_types';
 import { formatURLData } from '../utils/URLdataFormatter_utils';
 import browser from 'webextension-polyfill';
 import { ClassificationMapping } from '../constants/defaultview_contants';
+
+function getEndpointDedupeKey(endpoint: Endpoint): string {
+  return `${endpoint.foundAt}::${endpoint.url}`;
+}
+
+function mergeClassifications(
+  first: Record<string, boolean>,
+  second: Record<string, boolean>
+): Record<string, boolean> {
+  const merged = { ...first };
+
+  Object.entries(second).forEach(([key, value]) => {
+    merged[key] = Boolean(merged[key] || value);
+  });
+
+  return merged;
+}
+
+function dedupeEndpointsBySource(endpoints: Endpoint[]): Endpoint[] {
+  const uniqueBySource = new Map<string, Endpoint>();
+
+  endpoints.forEach((endpoint) => {
+    const dedupeKey = getEndpointDedupeKey(endpoint);
+    const existing = uniqueBySource.get(dedupeKey);
+
+    if (existing) {
+      existing.classifications = mergeClassifications(existing.classifications, endpoint.classifications);
+      existing.captureIndex = Math.min(existing.captureIndex, endpoint.captureIndex);
+      return;
+    }
+
+    uniqueBySource.set(dedupeKey, { ...endpoint });
+  });
+
+  return Array.from(uniqueBySource.values());
+}
+
 export function useURLData(
   selectedLocation: string,
   selectedWebpage: string,
   searchQuery: string,
-  startIndex: number,
-  visibleUrlSize: number,
+  _startIndex: number,
+  _visibleUrlSize: number,
   selectedCategories: Record<string, boolean>,
   sortOption: string,
 ) {
   const [urls, setURLs] = useState<Endpoint[]>([]);
   const [jsFiles, setJSFiles] = useState<Location[]>([]);
   const [webpages, setWebpages] = useState<Location[]>([]);
-  const [visibleUrls, setVisibleUrls] = useState<Endpoint[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +95,7 @@ export function useURLData(
       return matchesLocation && matchesQuery && matchesWebpage && (matchesCategories || Object.values(selectedCategories).every(value => value));
     });
 
-    return [...filtered].sort((a, b) => {
+    return dedupeEndpointsBySource(filtered).sort((a, b) => {
       switch (sortOption) {
         case 'captured-asc':
           return a.captureIndex - b.captureIndex;
@@ -82,17 +118,11 @@ export function useURLData(
     });
   }, [urls, selectedLocation, selectedWebpage, searchQuery, selectedCategories, sortOption]);
 
-  useEffect(() => {
-    const endIndex = Math.min(startIndex + visibleUrlSize, filteredURLs.length);
-    setVisibleUrls(filteredURLs.slice(startIndex, endIndex));
-  }, [filteredURLs, startIndex, visibleUrlSize]);
-
   return {
     urls,
     jsFiles,
     filteredURLs,
-    visibleUrls,
-    setVisibleUrls,
+    visibleUrls: filteredURLs,
     webpages,
     selectedCategories
   };
