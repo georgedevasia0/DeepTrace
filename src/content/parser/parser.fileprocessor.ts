@@ -2,6 +2,7 @@ import { PARSER_CONFIG } from './parser.config';
 import { StorageService } from './storage.service';
 import { REL_REGEX, ABS_REGEX, DOMAIN_REGEX } from '../../constants/regex_constants';
 import { ProgressBar } from '../../components/ProgressBar';
+import { SecretScanner } from './secret.scanner';
 
 export class JSFileProcessor {
   private parsedJSFiles: Set<string> = new Set();
@@ -58,9 +59,11 @@ export class JSFileProcessor {
         const jsFileAbURLs = Array.from(code.matchAll(ABS_REGEX), match => match[1]);
         const jsFileDomains = Array.from(code.matchAll(DOMAIN_REGEX), match => match[1]);
         const jsFileURLs = new Set([...jsFileRelURLs, ...jsFileAbURLs, ...jsFileDomains]);
+        const jsFileSecrets = SecretScanner.scan(code);
         
         const encodedURL = encodeURIComponent(js_file);
         await StorageService.saveToStorage(encodedURL, Array.from(jsFileURLs));
+        await StorageService.saveJSFileSecrets(encodedURL, jsFileSecrets);
 
         this.parsedJSFiles.add(js_file);
       } catch (error) {

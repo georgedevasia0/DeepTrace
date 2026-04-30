@@ -3,6 +3,7 @@ import browser from "webextension-polyfill";
 import "./App.css";
 import { MessageResponse, URLParserStorage, URLParserStorageItem } from "../constants/message_types";
 import { useThemeMode } from "../hooks/useThemeMode";
+import { SecretParserStorage, SecretParserStorageItem } from "../constants/secret_types";
 
 const Logo = "/icons/EndPointer.png";
 
@@ -10,6 +11,7 @@ interface AppState {
   urlParser: boolean;
   urlCount: number;
   jsFileCount: number;
+  secretCount: number;
   scopes: string[];
   reqAmt: number;
 }
@@ -65,6 +67,7 @@ function PopUpApp() {
     urlParser: false,
     urlCount: 0,
     jsFileCount: 0,
+    secretCount: 0,
     scopes: [],
     reqAmt: 1,
   });
@@ -116,9 +119,40 @@ function PopUpApp() {
         reqAmt: (reqAmtResult.requests as number) || 1,
       }));
 
-      const parserResult = await browser.storage.local.get("URL-PARSER");
+      const parserResult = await browser.storage.local.get(["URL-PARSER", "SECRET-PARSER"]);
       const urlParser = (parserResult["URL-PARSER"] || {}) as URLParserStorage;
+      const secretParser = (parserResult["SECRET-PARSER"] || {}) as SecretParserStorage;
       const currentStorageKey = urlParser.current;
+      const currentSecretStorageKey = secretParser.current;
+
+      if (currentSecretStorageKey && typeof currentSecretStorageKey === "string") {
+        const currentSecretData = secretParser[currentSecretStorageKey] as SecretParserStorageItem | undefined;
+
+        if (currentSecretData && typeof currentSecretData !== "string") {
+          const pageSecretCount = currentSecretData.currPage.length;
+          const externalSecretCount = Object.values(currentSecretData.externalJSFiles)
+            .reduce((total, secrets) => total + secrets.length, 0);
+
+          setState((prevState) => ({
+            ...prevState,
+            secretCount: pageSecretCount + externalSecretCount,
+          }));
+        }
+      } else {
+        const allSecretEntries = Object.entries(secretParser).filter(
+          ([key, value]) => key !== "current" && typeof value !== "string" && value !== undefined
+        ) as Array<[string, SecretParserStorageItem]>;
+
+        const fallbackSecretCount = allSecretEntries.reduce((total, [, value]) => {
+          const jsSecretCount = Object.values(value.externalJSFiles).reduce((sum, secrets) => sum + secrets.length, 0);
+          return total + value.currPage.length + jsSecretCount;
+        }, 0);
+
+        setState((prevState) => ({
+          ...prevState,
+          secretCount: fallbackSecretCount,
+        }));
+      }
 
       if (currentStorageKey && typeof currentStorageKey === "string") {
         const currentPageData = urlParser[currentStorageKey] as URLParserStorageItem | undefined;
@@ -311,7 +345,7 @@ function PopUpApp() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
+            <div className="mt-6 grid gap-3 md:grid-cols-4">
               <div className={cardClassName}>
                 <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#83bfd0]'}`}>Discovered URLs</div>
                 <div className={`mt-3 text-3xl font-bold ${headingTextClass}`}>{state.urlCount}</div>
@@ -327,6 +361,11 @@ function PopUpApp() {
                 <div className={`mt-3 text-3xl font-bold ${headingTextClass}`}>{state.scopes.length}</div>
                 <div className={`mt-2 text-xs ${mutedTextClass}`}>Host boundaries currently applied to parsing.</div>
               </div>
+              <div className={cardClassName}>
+                <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#83bfd0]'}`}>Secrets</div>
+                <div className={`mt-3 text-3xl font-bold ${headingTextClass}`}>{state.secretCount}</div>
+                <div className={`mt-2 text-xs ${mutedTextClass}`}>Credential-like findings captured locally.</div>
+              </div>
             </div>
           </div>
 
@@ -340,6 +379,16 @@ function PopUpApp() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
                     <path d="M4 5h16v10H4z" stroke="currentColor" strokeWidth="1.8" />
                     <path d="M8 19h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                }
+              />
+              <ActionButton
+                label="View Secrets"
+                href={document.location.origin + "/PopUp/popup.html#secrets"}
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3l7 3v5c0 4.5-2.9 8.4-7 10c-4.1-1.6-7-5.5-7-10V6z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                    <path d="M9.5 12.2l1.6 1.6l3.7-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 }
               />

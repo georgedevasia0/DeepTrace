@@ -4,6 +4,7 @@ import browser from 'webextension-polyfill';
 import { URLParserStorageWithOptionalCurrent } from './parser.types';
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
 import { filterCapturedEndpoints } from '../../utils/endpointFilter';
+import { SecretScanner } from './secret.scanner';
 
 export class PageParser {
   async parseCurrentPage(): Promise<Set<string>> {
@@ -12,9 +13,11 @@ export class PageParser {
     const relPageURLs = Array.from(pageContent.matchAll(REL_REGEX), match => match[1]);
     const pageDomains = Array.from(pageContent.matchAll(DOMAIN_REGEX), match => match[1]);
     const pageURLs = new Set(filterCapturedEndpoints([...abPageURLs, ...relPageURLs, ...pageDomains]));
+    const pageSecrets = SecretScanner.scan(pageContent);
 
     const currPage = encodeURIComponent(document.location.href);
     await this.saveToBrowser(currPage, pageURLs);
+    await StorageService.savePageSecrets(currPage, pageSecrets);
     await StorageService.updateURLCount(pageURLs.size);
 
     return pageURLs;

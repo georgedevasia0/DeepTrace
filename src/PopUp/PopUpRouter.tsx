@@ -10,6 +10,7 @@ import './index.css'
 import { URLs } from '../routes/urls'
 
 import { URLsOutput } from '../routes/urls-output'
+import { Secrets } from '../routes/secrets'
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -20,6 +21,7 @@ if (rootElement) {
           <Route path="" element={<PopUpApp />} />
           <Route path="/urls" element={<URLs />} />
           <Route path="/urls/output" element={<URLsOutput />} />
+          <Route path="/secrets" element={<Secrets />} />
         </Routes>
       </Router>
     </StrictMode>

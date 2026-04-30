@@ -389,6 +389,7 @@ export function URLsTreeView({ selection = "tree", setSelection }: URLsTreeViewP
             </svg>
           </button>
           <a href={document.location.origin + "/PopUp/popup.html#urls/output"} target="_blank" className={`rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 ${isLight ? 'border-[#d3e3ec] bg-[#ffffff] text-slate-900 hover:border-[#8bc7d9]' : 'border-[#355c6a] bg-[#12232b] text-white hover:border-[#7fb8cb]'}`}>OUTPUT</a>
+          <a href={document.location.origin + "/PopUp/popup.html#secrets"} target="_blank" className={`rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 ${isLight ? 'border-[#d3e3ec] bg-[#ffffff] text-slate-900 hover:border-[#8bc7d9]' : 'border-[#355c6a] bg-[#12232b] text-white hover:border-[#7fb8cb]'}`}>SECRETS</a>
         </div>
       </div>
     </div>

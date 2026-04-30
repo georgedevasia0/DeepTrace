@@ -8,14 +8,19 @@ import Logo from '../../public/icons/EndPointer.png';
 
 function DevToolsApp() {
   const [urlCount, setURLCount] = useState(0)
+  const [secretCount, setSecretCount] = useState(0)
   const navigate = useNavigate()
 
   useEffect(() => {
     updateURLCount()
+    updateSecretCount()
 
     const storageListener = (changes: { [key: string]: browser.Storage.StorageChange }) => {
       if (changes["URL-PARSER"]) {
         updateURLCount()
+      }
+      if (changes["SECRET-PARSER"]) {
+        updateSecretCount()
       }
     }
 
@@ -50,20 +55,47 @@ function DevToolsApp() {
     }
   }
 
+  const updateSecretCount = async () => {
+    try {
+      const data = await browser.storage.local.get("SECRET-PARSER")
+      const secretParser = data["SECRET-PARSER"] as Record<string, any> || {}
+      let totalSecretCount = 0
+
+      Object.keys(secretParser).forEach((key) => {
+        if (key !== "current") {
+          const currPageSecrets = secretParser[key]["currPage"] as any[] || []
+          const externalSecrets = secretParser[key]["externalJSFiles"] as Record<string, any[]> || {}
+
+          totalSecretCount += currPageSecrets.length + Object.values(externalSecrets).flat().length
+        }
+      })
+
+      setSecretCount(totalSecretCount)
+    } catch (error) {
+      console.error("Error updating secret count:", error)
+    }
+  }
+
   const handleURLButtonClick = () => {
     navigate('/urls')
+  }
+
+  const handleSecretsButtonClick = () => {
+    navigate('/secrets')
   }
 
   const clearCache = async () => {
     await browser.storage.local.clear()
     alert("Cache cleared")
     updateURLCount()
+    updateSecretCount()
   }
 
   const clearURLs = async () => {
-    await browser.storage.local.set({ "URL-PARSER": {} })
+    await browser.storage.local.set({ "URL-PARSER": {}, "SECRET-PARSER": {}, secretCount: 0 })
     console.log('URL-PARSER has been removed.')
     updateURLCount()
+    updateSecretCount()
   }
   
   return (
@@ -99,6 +131,12 @@ function DevToolsApp() {
                 onClick={handleURLButtonClick}
               >
                 <span className=" text-white">URLs</span> <span className="text-customFont">({urlCount})</span>
+              </button>
+              <button 
+                className="w-72 rounded-sm p-3 font-semibold border-customFont border-2 bg-gradient-to-r from-customFont to-customBg" 
+                onClick={handleSecretsButtonClick}
+              >
+                <span className=" text-white">Secrets</span> <span className="text-customFont">({secretCount})</span>
               </button>
           </div>
         </div>

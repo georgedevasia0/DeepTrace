@@ -10,6 +10,7 @@ import {
 import { URLsDefaultView } from '../routes/urls-defaultview'
 import { URLsTreeView } from '../routes/urls-treeview'
 import { URLs } from '../routes/urls';
+import { Secrets } from '../routes/secrets';
 
 
 
@@ -41,6 +42,7 @@ function renderApp() {
             <Route path="/urls/" element={<URLs />} />
             <Route path="/urls/default" element={<URLsDefaultView />} />
             <Route path="/urls/tree" element={<URLsTreeView />} />
+            <Route path="/secrets" element={<Secrets />} />
           </Routes>
         </Router>
       </StrictMode>

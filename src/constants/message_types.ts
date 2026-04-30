@@ -11,6 +11,7 @@ export type MessageAction =
   | 'clearURLs'
   | 'updateURLCount'
   | 'updateJSFileCount'
+  | 'updateSecretCount'
   | 'reparse'
   | 'getRequestDetails'
   | 'checkContentScriptInjected'

@@ -3,6 +3,7 @@ import { URLParserStorageWithOptionalCurrent, URLParserStorageItem } from './par
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
 import { decode } from 'punycode';
 import { shouldCaptureEndpoint } from '../../utils/endpointFilter';
+import { SecretParserStorage, SecretParserStorageItem, StoredSecret } from '../../constants/secret_types';
 
 function safeDecodeURIComponent(value: string): string {
   try {
@@ -55,6 +56,49 @@ export class StorageService {
     await browser.storage.local.set({ 'URL-PARSER': urlParser });
   }
 
+  static async savePageSecrets(encodedPageURL: string, secrets: StoredSecret[]): Promise<void> {
+    const result = await browser.storage.local.get('SECRET-PARSER');
+    const secretParser = (result['SECRET-PARSER'] as SecretParserStorage) || {};
+
+    if (!secretParser[encodedPageURL] || typeof secretParser[encodedPageURL] === 'string') {
+      secretParser[encodedPageURL] = {
+        currPage: [],
+        externalJSFiles: {}
+      };
+    }
+
+    const currentPageData = secretParser[encodedPageURL] as SecretParserStorageItem;
+    currentPageData.currPage = this.mergeSecrets(currentPageData.currPage, secrets);
+    secretParser.current = encodedPageURL;
+
+    await browser.storage.local.set({ 'SECRET-PARSER': secretParser });
+    await this.updateSecretCount(await this.countCurrentSecrets(secretParser));
+  }
+
+  static async saveJSFileSecrets(encodedURL: string, secrets: StoredSecret[]): Promise<void> {
+    const result = await browser.storage.local.get('SECRET-PARSER');
+    const secretParser = (result['SECRET-PARSER'] as SecretParserStorage) || {};
+    const currentURL = secretParser.current || '';
+
+    if (!currentURL) {
+      return;
+    }
+
+    if (!secretParser[currentURL] || typeof secretParser[currentURL] === 'string') {
+      secretParser[currentURL] = {
+        currPage: [],
+        externalJSFiles: {}
+      };
+    }
+
+    const currentPageData = secretParser[currentURL] as SecretParserStorageItem;
+    const existingSecrets = currentPageData.externalJSFiles[encodedURL] || [];
+    currentPageData.externalJSFiles[encodedURL] = this.mergeSecrets(existingSecrets, secrets);
+
+    await browser.storage.local.set({ 'SECRET-PARSER': secretParser });
+    await this.updateSecretCount(await this.countCurrentSecrets(secretParser));
+  }
+
 
   static async updateURLCount(count: number): Promise<void> {
     await browser.storage.local.set({ urlCount: count });
@@ -62,5 +106,45 @@ export class StorageService {
 
   static async updateJSFileCount(count: number): Promise<void> {
     await browser.storage.local.set({ jsFileCount: count });
+  }
+
+  static async updateSecretCount(count: number): Promise<void> {
+    await browser.storage.local.set({ secretCount: count });
+  }
+
+  private static mergeSecrets(existingSecrets: StoredSecret[], newSecrets: StoredSecret[]): StoredSecret[] {
+    const bySecret = new Map<string, StoredSecret>();
+
+    existingSecrets.forEach((secret) => {
+      bySecret.set(this.getSecretDedupeKey(secret), secret);
+    });
+
+    newSecrets.forEach((secret) => {
+      const key = this.getSecretDedupeKey(secret);
+      if (!bySecret.has(key)) {
+        bySecret.set(key, secret);
+      }
+    });
+
+    return Array.from(bySecret.values());
+  }
+
+  private static getSecretDedupeKey(secret: StoredSecret): string {
+    return `${secret.detectorId}:${secret.secret}`;
+  }
+
+  private static async countCurrentSecrets(secretParser: SecretParserStorage): Promise<number> {
+    const currentURL = secretParser.current;
+    if (!currentURL) {
+      return 0;
+    }
+
+    const currentPageData = secretParser[currentURL];
+    if (!currentPageData || typeof currentPageData === 'string') {
+      return 0;
+    }
+
+    return currentPageData.currPage.length +
+      Object.values(currentPageData.externalJSFiles).reduce((total, secrets) => total + secrets.length, 0);
   }
 }

@@ -34,8 +34,20 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
         parser.parseURLs();
       }
       typedSendResponse({ success: true });
+      break;
+    case 'autoParserStateChanged':
+      isAutoParserEnabled = typedMessage.state ?? false;
+      if (isAutoParserEnabled) {
+        parser.parseURLs().then(() => typedSendResponse({ success: true }));
+      } else {
+        typedSendResponse({ success: true });
+      }
+      break;
+    case 'checkContentScriptInjected':
+      typedSendResponse({ success: true });
+      break;
     case 'clearURLs':
-      browser.storage.local.set({ "URL-PARSER": {} }).then(() => typedSendResponse({ success: true }));
+      browser.storage.local.set({ "URL-PARSER": {}, "SECRET-PARSER": {}, secretCount: 0 }).then(() => typedSendResponse({ success: true }));
       break;
     default:
       typedSendResponse({ success: false, error: 'Unknown action' });
