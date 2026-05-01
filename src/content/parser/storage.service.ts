@@ -72,7 +72,7 @@ export class StorageService {
     secretParser.current = encodedPageURL;
 
     await browser.storage.local.set({ 'SECRET-PARSER': secretParser });
-    await this.updateSecretCount(await this.countCurrentSecrets(secretParser));
+    await this.updateSecretCount(await this.countAllSecrets(secretParser));
   }
 
   static async saveJSFileSecrets(encodedURL: string, secrets: StoredSecret[]): Promise<void> {
@@ -97,6 +97,26 @@ export class StorageService {
 
     await browser.storage.local.set({ 'SECRET-PARSER': secretParser });
     await this.updateSecretCount(await this.countCurrentSecrets(secretParser));
+  }
+
+  static async saveJSFileSecretsForPage(encodedPageURL: string, encodedURL: string, secrets: StoredSecret[]): Promise<void> {
+    const result = await browser.storage.local.get('SECRET-PARSER');
+    const secretParser = (result['SECRET-PARSER'] as SecretParserStorage) || {};
+
+    if (!secretParser[encodedPageURL] || typeof secretParser[encodedPageURL] === 'string') {
+      secretParser[encodedPageURL] = {
+        currPage: [],
+        externalJSFiles: {}
+      };
+    }
+
+    const currentPageData = secretParser[encodedPageURL] as SecretParserStorageItem;
+    const existingSecrets = currentPageData.externalJSFiles[encodedURL] || [];
+    currentPageData.externalJSFiles[encodedURL] = this.mergeSecrets(existingSecrets, secrets);
+    secretParser.current = encodedPageURL;
+
+    await browser.storage.local.set({ 'SECRET-PARSER': secretParser });
+    await this.updateSecretCount(await this.countAllSecrets(secretParser));
   }
 
 
@@ -146,5 +166,16 @@ export class StorageService {
 
     return currentPageData.currPage.length +
       Object.values(currentPageData.externalJSFiles).reduce((total, secrets) => total + secrets.length, 0);
+  }
+
+  private static async countAllSecrets(secretParser: SecretParserStorage): Promise<number> {
+    return Object.entries(secretParser).reduce((total, [key, value]) => {
+      if (key === 'current' || typeof value === 'string' || value === undefined) {
+        return total;
+      }
+
+      return total + value.currPage.length +
+        Object.values(value.externalJSFiles).reduce((sum, secrets) => sum + secrets.length, 0);
+    }, 0);
   }
 }

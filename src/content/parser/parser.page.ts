@@ -4,26 +4,23 @@ import browser from 'webextension-polyfill';
 import { URLParserStorageWithOptionalCurrent } from './parser.types';
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
 import { filterCapturedEndpoints } from '../../utils/endpointFilter';
-import { SecretScanner } from './secret.scanner';
 
 export class PageParser {
   async parseCurrentPage(): Promise<Set<string>> {
-    const pageContent = document.documentElement.outerHTML;
+    const pageContent = document.documentElement?.outerHTML || document.body?.outerHTML || '';
     const abPageURLs = Array.from(pageContent.matchAll(ABS_REGEX), match => match[1]);
     const relPageURLs = Array.from(pageContent.matchAll(REL_REGEX), match => match[1]);
     const pageDomains = Array.from(pageContent.matchAll(DOMAIN_REGEX), match => match[1]);
     const pageURLs = new Set(filterCapturedEndpoints([...abPageURLs, ...relPageURLs, ...pageDomains]));
-    const pageSecrets = SecretScanner.scan(pageContent);
 
     const currPage = encodeURIComponent(document.location.href);
-    await this.saveToBrowser(currPage, pageURLs);
-    await StorageService.savePageSecrets(currPage, pageSecrets);
-    await StorageService.updateURLCount(pageURLs.size);
+    const mergedURLCount = await this.saveToBrowser(currPage, pageURLs);
+    await StorageService.updateURLCount(mergedURLCount);
 
     return pageURLs;
   }
 
-  private async saveToBrowser(currPage: string, pageURLs: Set<string>): Promise<void> {
+  private async saveToBrowser(currPage: string, pageURLs: Set<string>): Promise<number> {
     const result = await browser.storage.local.get('URL-PARSER');
     const urlParser = (result['URL-PARSER'] as URLParserStorageWithOptionalCurrent) || {};
     
@@ -37,8 +34,23 @@ export class PageParser {
       };
     }
 
+    const existingPageData = urlParser[currPage];
+    const existingURLs = Array.isArray(existingPageData?.currPage) ? existingPageData.currPage : [];
+    const urlsByValue = new Map(existingURLs.map((entry) => [entry.url, entry]));
+
+    Array.from(pageURLs).forEach((url) => {
+      if (!urlsByValue.has(url)) {
+        urlsByValue.set(url, {
+          url,
+          classifications: {} as URLClassification
+        });
+      }
+    });
+
+    urlParser[currPage].currPage = Array.from(urlsByValue.values());
     urlParser.current = currPage;
     await browser.storage.local.set({ 'URL-PARSER': urlParser });
+    return urlParser[currPage].currPage.length;
   }
 
   getScriptFiles(): string[] {
@@ -65,10 +77,12 @@ export class PageParser {
       }
     });
 
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+    if (document.documentElement) {
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+      });
+    }
 
     return observer;
   }

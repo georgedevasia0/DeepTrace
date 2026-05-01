@@ -18,6 +18,17 @@ export interface SecretFinding extends StoredSecret {
   captureIndex: number;
 }
 
+export interface SecretScanProgress {
+  running: boolean;
+  total: number;
+  completed: number;
+  failed: number;
+  current: string;
+  startedAt?: string;
+  finishedAt?: string;
+  error?: string;
+}
+
 export interface SecretParserStorageItem {
   currPage: StoredSecret[];
   externalJSFiles: {
@@ -29,4 +40,3 @@ export type SecretParserStorage = {
   [key: string]: SecretParserStorageItem | string | undefined;
   current?: string;
 };
-

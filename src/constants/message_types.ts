@@ -17,7 +17,9 @@ export type MessageAction =
   | 'checkContentScriptInjected'
   | 'autoParserStateChanged'
   | 'sendRequest'
-  | 'clearResponseCache';
+  | 'clearResponseCache'
+  | 'scanSecrets'
+  | 'getSecretScanProgress';
 
 export interface Message {
   action: MessageAction;

@@ -5,6 +5,8 @@ import { JSFileProcessor } from './parser/parser.fileprocessor';
 import { URLParserStorage } from '../constants/message_types';
 import { URLParserStorageItem } from './parser/parser.types';
 import { ProgressBar } from '../components/ProgressBar';
+import { SecretScanService } from './parser/secretScan.service';
+import { SecretScanProgress } from '../constants/secret_types';
 
 import browser from 'webextension-polyfill'
 
@@ -12,17 +14,48 @@ import browser from 'webextension-polyfill'
 export class Parser {
   private pageParser: PageParser;
   private jsFileProcessor: JSFileProcessor;
+  private secretScanService: SecretScanService;
   private progressBar: ProgressBar;
   private scriptFiles: string[] = [];
+  private parsePromise: Promise<void> | null = null;
+  private queuedParse = false;
   
 
   constructor() {
     this.pageParser = new PageParser();
     this.progressBar = new ProgressBar();
     this.jsFileProcessor = new JSFileProcessor(this.progressBar);  // Pass the instance
+    this.secretScanService = new SecretScanService();
   }
 
   async parseURLs(): Promise<void> {
+    if (this.parsePromise) {
+      this.queuedParse = true;
+      await this.parsePromise;
+
+      if (this.queuedParse) {
+        this.queuedParse = false;
+        return this.parseURLs();
+      }
+
+      return;
+    }
+
+    this.parsePromise = this.runParseURLs();
+
+    try {
+      await this.parsePromise;
+    } finally {
+      this.parsePromise = null;
+    }
+
+    if (this.queuedParse) {
+      this.queuedParse = false;
+      return this.parseURLs();
+    }
+  }
+
+  private async runParseURLs(): Promise<void> {
     await this.jsFileProcessor.setConcurrentRequests();
     
     const host: string = document.location.hostname;
@@ -61,7 +94,16 @@ export class Parser {
 
   async reparse(): Promise<void> {
     this.jsFileProcessor = new JSFileProcessor(this.progressBar);  // Pass the existing progressBar instance
+    this.queuedParse = false;
     return this.parseURLs();
+  }
+
+  async scanSecrets(): Promise<void> {
+    return this.secretScanService.scanCapturedURLs();
+  }
+
+  async getSecretScanProgress(): Promise<SecretScanProgress> {
+    return this.secretScanService.getProgress();
   }
 
   static async countURLs(): Promise<number> {

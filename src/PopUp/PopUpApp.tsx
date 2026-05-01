@@ -3,7 +3,7 @@ import browser from "webextension-polyfill";
 import "./App.css";
 import { MessageResponse, URLParserStorage, URLParserStorageItem } from "../constants/message_types";
 import { useThemeMode } from "../hooks/useThemeMode";
-import { SecretParserStorage, SecretParserStorageItem } from "../constants/secret_types";
+import { SecretParserStorage, SecretParserStorageItem, SecretScanProgress } from "../constants/secret_types";
 
 const Logo = "/icons/EndPointer.png";
 
@@ -12,6 +12,7 @@ interface AppState {
   urlCount: number;
   jsFileCount: number;
   secretCount: number;
+  secretScanProgress: SecretScanProgress;
   scopes: string[];
   reqAmt: number;
 }
@@ -68,6 +69,13 @@ function PopUpApp() {
     urlCount: 0,
     jsFileCount: 0,
     secretCount: 0,
+    secretScanProgress: {
+      running: false,
+      total: 0,
+      completed: 0,
+      failed: 0,
+      current: "",
+    },
     scopes: [],
     reqAmt: 1,
   });
@@ -119,11 +127,23 @@ function PopUpApp() {
         reqAmt: (reqAmtResult.requests as number) || 1,
       }));
 
-      const parserResult = await browser.storage.local.get(["URL-PARSER", "SECRET-PARSER"]);
+      const parserResult = await browser.storage.local.get(["URL-PARSER", "SECRET-PARSER", "secretScanProgress"]);
       const urlParser = (parserResult["URL-PARSER"] || {}) as URLParserStorage;
       const secretParser = (parserResult["SECRET-PARSER"] || {}) as SecretParserStorage;
+      const secretScanProgress = (parserResult.secretScanProgress || {
+        running: false,
+        total: 0,
+        completed: 0,
+        failed: 0,
+        current: "",
+      }) as SecretScanProgress;
       const currentStorageKey = urlParser.current;
       const currentSecretStorageKey = secretParser.current;
+
+      setState((prevState) => ({
+        ...prevState,
+        secretScanProgress,
+      }));
 
       if (currentSecretStorageKey && typeof currentSecretStorageKey === "string") {
         const currentSecretData = secretParser[currentSecretStorageKey] as SecretParserStorageItem | undefined;
@@ -211,6 +231,7 @@ function PopUpApp() {
   };
 
   const parseURLs = () => handleAction("reparse");
+  const scanSecrets = () => handleAction("scanSecrets");
   const clearURLs = () => handleAction("clearURLs");
 
   useEffect(() => {
@@ -293,6 +314,9 @@ function PopUpApp() {
   const bodyTextClass = isLight ? "text-slate-700" : "text-slate-300";
   const headingTextClass = isLight ? "text-slate-950" : "text-white";
   const mutedTextClass = isLight ? "text-slate-600" : "text-slate-400";
+  const secretScanPercent = state.secretScanProgress.total > 0
+    ? Math.round((state.secretScanProgress.completed / state.secretScanProgress.total) * 100)
+    : 0;
 
   return (
     <div className={shellClassName}>
@@ -393,6 +417,20 @@ function PopUpApp() {
                 }
               />
               <ActionButton
+                label={state.secretScanProgress.running ? `Scanning Secrets ${secretScanPercent}%` : "Run Secret Scanner"}
+                onClick={scanSecrets}
+                variant="primary"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 11V6a2 2 0 0 1 2-2h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path d="M13 20h5a2 2 0 0 0 2-2v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path d="M20 4l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path d="M15 4h5v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M4 20l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                }
+              />
+              <ActionButton
                 label="Run Reparse"
                 onClick={parseURLs}
                 icon={
@@ -429,6 +467,35 @@ function PopUpApp() {
                 }
               />
             </div>
+
+            {(state.secretScanProgress.running || state.secretScanProgress.total > 0) && (
+              <section className={sectionClassName}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Secret Scanner</div>
+                    <h2 className={`mt-2 text-2xl font-bold ${headingTextClass}`}>
+                      {state.secretScanProgress.running ? "Scanning captured pages and assets" : "Last scan"}
+                    </h2>
+                    <p className={`mt-2 max-w-2xl break-all text-sm leading-6 ${mutedTextClass}`}>
+                      {state.secretScanProgress.current || "No secret scan has run yet."}
+                    </p>
+                  </div>
+                  <div className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] ${isLight ? 'border-[#cfe0ea] bg-[#f5fbff] text-[#2d7b96]' : 'border-[#355b68] bg-[#12303b] text-[#a4e5f4]'}`}>
+                    {state.secretScanProgress.completed}/{state.secretScanProgress.total}
+                  </div>
+                </div>
+                <div className={`mt-5 h-3 overflow-hidden rounded-full ${isLight ? 'bg-[#dde8ef]' : 'bg-[#091117]'}`}>
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#2fd4c8,#8cf6a6)] transition-all duration-300"
+                    style={{ width: `${secretScanPercent}%` }}
+                  ></div>
+                </div>
+                <div className={`mt-3 flex flex-wrap justify-between gap-3 text-xs ${mutedTextClass}`}>
+                  <span>{secretScanPercent}% complete</span>
+                  <span>{state.secretScanProgress.failed} failed</span>
+                </div>
+              </section>
+            )}
 
             <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
               <section className={sectionClassName}>
