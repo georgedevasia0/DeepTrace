@@ -19,6 +19,7 @@ export type MessageAction =
   | 'sendRequest'
   | 'clearResponseCache'
   | 'scanSecrets'
+  | 'stopSecretScan'
   | 'getSecretScanProgress';
 
 export interface Message {

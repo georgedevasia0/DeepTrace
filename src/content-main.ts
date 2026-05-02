@@ -39,6 +39,10 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
       parser.scanSecrets();
       typedSendResponse({ success: true });
       break;
+    case 'stopSecretScan':
+      parser.stopSecretScan();
+      typedSendResponse({ success: true });
+      break;
     case 'getSecretScanProgress':
       parser.getSecretScanProgress().then(details => typedSendResponse({ success: true, details }));
       break;

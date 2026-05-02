@@ -102,6 +102,10 @@ export class Parser {
     return this.secretScanService.scanCapturedURLs();
   }
 
+  stopSecretScan(): void {
+    this.secretScanService.stop();
+  }
+
   async getSecretScanProgress(): Promise<SecretScanProgress> {
     return this.secretScanService.getProgress();
   }

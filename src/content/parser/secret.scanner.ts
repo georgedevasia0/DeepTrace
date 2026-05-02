@@ -11,6 +11,7 @@ interface SecretDetector {
 }
 
 const MAX_SECRET_LENGTH = 240;
+const MIN_CONFIG_SECRET_LENGTH = 4;
 const CONTEXT_RADIUS = 80;
 
 function hasReasonableEntropy(value: string): boolean {
@@ -56,9 +57,53 @@ function isLikelyToken(value: string): boolean {
   return secret.length <= MAX_SECRET_LENGTH && !looksLikePlaceholder(secret) && hasReasonableEntropy(secret);
 }
 
+function looksLikeNonSecretConfigValue(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+
+  if (!normalized) {
+    return true;
+  }
+
+  return [
+    'true',
+    'false',
+    'enabled',
+    'disabled',
+    'enable',
+    'disable',
+    'yes',
+    'no',
+    'null',
+    'undefined',
+    'production',
+    'development',
+    'staging',
+    'test',
+  ].includes(normalized);
+}
+
+function isPotentialConfigSecret(value: string): boolean {
+  const secret = value.trim();
+
+  return (
+    secret.length >= MIN_CONFIG_SECRET_LENGTH &&
+    secret.length <= MAX_SECRET_LENGTH &&
+    !looksLikePlaceholder(secret) &&
+    !looksLikeNonSecretConfigValue(secret) &&
+    !/^https?:\/\//i.test(secret)
+  );
+}
+
 function buildAssignmentPattern(names: string): RegExp {
   return new RegExp(
     String.raw`\b(?:${names})\b\s*(?:=|:|=>)\s*["'\`]?(?<secret>[A-Za-z0-9_./+=:@%$-]{16,${MAX_SECRET_LENGTH}})["'\`]?`,
+    'gi'
+  );
+}
+
+function buildConfigAssignmentPattern(names: string): RegExp {
+  return new RegExp(
+    String.raw`\b(?:${names})\b\s*(?:=|:|=>)\s*["'\`]?(?<secret>[^"'\x60,\r\n]{${MIN_CONFIG_SECRET_LENGTH},${MAX_SECRET_LENGTH}})["'\`]?`,
     'gi'
   );
 }
@@ -83,6 +128,8 @@ function assignmentDetector(
 const API_KEY_WORDS = String.raw`api(?:_|-)?key|access(?:_|-)?key|secret(?:_|-)?key`;
 const API_TOKEN_WORDS = String.raw`api(?:_|-)?token|access(?:_|-)?token|auth(?:_|-)?token|bearer(?:_|-)?token|refresh(?:_|-)?token`;
 const SECRET_WORDS = String.raw`client(?:_|-)?secret|consumer(?:_|-)?secret|app(?:_|-)?secret|signing(?:_|-)?secret|webhook(?:_|-)?secret|private(?:_|-)?key`;
+const PUBLIC_CONFIG_PREFIXES = String.raw`next(?:_|-)?public|vite|react(?:_|-)?app|public`;
+const PUBLIC_CONFIG_SECRET_WORDS = String.raw`api(?:_|-)?key|access(?:_|-)?key|secret(?:_|-)?key|site(?:_|-)?key|store(?:_|-)?key|public(?:_|-)?key|publishable(?:_|-)?key|token|access(?:_|-)?token|auth(?:_|-)?token|bearer(?:_|-)?token|refresh(?:_|-)?token|preview(?:_|-)?token|static(?:_|-)?token|client(?:_|-)?secret|consumer(?:_|-)?secret|app(?:_|-)?secret|user(?:_|-)?agent(?:_|-)?secret|validation(?:_|-)?secret|webhook(?:_|-)?secret|private(?:_|-)?key|client(?:_|-)?id|app(?:_|-)?id|application(?:_|-)?id|space(?:_|-)?id|list(?:_|-)?id|company(?:_|-)?id|account(?:_|-)?id|tenant(?:_|-)?id|subscription(?:_|-)?form(?:_|-)?(?:mobile|desktop|id)?|sms(?:_|-)?list(?:_|-)?id`;
 
 const PROVIDER_ASSIGNMENT_DETECTORS: SecretDetector[] = [
   assignmentDetector('openai-assignment', 'OpenAI Secret', String.raw`openai(?:_|-)?(?:${API_KEY_WORDS}|${API_TOKEN_WORDS}|${SECRET_WORDS})`, 'critical', 88),
@@ -837,6 +884,16 @@ const DETECTORS: SecretDetector[] = [
     pattern: /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[A-Za-z0-9._~%+-]{2,64}:[^@\s"'<>]{6,128}@[^\s"'<>]+/g,
     severity: 'critical',
     confidence: 92,
+  },
+  {
+    id: 'public-config-secret-assignment',
+    name: 'Public Config Secret',
+    pattern: buildConfigAssignmentPattern(
+      String.raw`(?:${PUBLIC_CONFIG_PREFIXES})(?:_|-)?(?:[a-z0-9]+(?:_|-)?){0,8}(?:${PUBLIC_CONFIG_SECRET_WORDS})|(?:${PUBLIC_CONFIG_SECRET_WORDS})`
+    ),
+    severity: 'high',
+    confidence: 72,
+    validate: isPotentialConfigSecret,
   },
   ...PROVIDER_ASSIGNMENT_DETECTORS,
   ...BROAD_PROVIDER_ASSIGNMENT_DETECTORS,

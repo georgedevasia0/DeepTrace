@@ -62,6 +62,14 @@ function ActionButton({ label, onClick, href, variant = "secondary", icon }: Act
   );
 }
 
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 function PopUpApp() {
   const { themeMode, isLight, toggleTheme } = useThemeMode();
   const [state, setState] = useState<AppState>({
@@ -214,12 +222,46 @@ function PopUpApp() {
     }
   };
 
+  const getMessageTargetTab = async (): Promise<browser.Tabs.Tab | undefined> => {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
+    const extensionOrigin = document.location.origin;
+
+    if (activeTab?.id && activeTab.url && !activeTab.url.startsWith(extensionOrigin)) {
+      return activeTab;
+    }
+
+    const parserResult = await browser.storage.local.get("URL-PARSER");
+    const urlParser = (parserResult["URL-PARSER"] || {}) as URLParserStorage;
+    const currentURL = typeof urlParser.current === "string" ? safeDecodeURIComponent(urlParser.current) : "";
+
+    if (currentURL) {
+      const currentWindowTabs = await browser.tabs.query({ currentWindow: true });
+      const matchingTab = currentWindowTabs.find((tab) => tab.id && tab.url === currentURL);
+
+      if (matchingTab) {
+        return matchingTab;
+      }
+    }
+
+    const currentWindowTabs = await browser.tabs.query({ currentWindow: true });
+    return currentWindowTabs.find((tab) => (
+      tab.id &&
+      tab.url &&
+      !tab.url.startsWith(extensionOrigin) &&
+      !tab.url.startsWith("about:") &&
+      !tab.url.startsWith("chrome:") &&
+      !tab.url.startsWith("chrome-extension:") &&
+      !tab.url.startsWith("moz-extension:")
+    ));
+  };
+
   const handleAction = async (action: string, payload?: Record<string, unknown>) => {
     try {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tabs[0]?.id) {
+      const tab = await getMessageTargetTab();
+      if (tab?.id) {
         const message = payload ? { action, ...payload } : { action };
-        const response = await browser.tabs.sendMessage(tabs[0].id, message) as MessageResponse;
+        const response = await browser.tabs.sendMessage(tab.id, message) as MessageResponse;
         if (!response.success) {
           throw new Error(response.error);
         }
@@ -232,6 +274,7 @@ function PopUpApp() {
 
   const parseURLs = () => handleAction("reparse");
   const scanSecrets = () => handleAction("scanSecrets");
+  const stopSecretScan = () => handleAction("stopSecretScan");
   const clearURLs = () => handleAction("clearURLs");
 
   useEffect(() => {
@@ -484,6 +527,22 @@ function PopUpApp() {
                     {state.secretScanProgress.completed}/{state.secretScanProgress.total}
                   </div>
                 </div>
+                {state.secretScanProgress.running && (
+                  <button
+                    type="button"
+                    onClick={stopSecretScan}
+                    className={`mt-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-200 ${
+                      isLight
+                        ? 'border-[#f2b0b0] bg-[#fff5f5] text-[#9d2e2e] hover:border-[#d95c5c]'
+                        : 'border-[#704047] bg-[#2a161b] text-[#ffc3c9] hover:border-[#f28a96]'
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                    Stop Scan
+                  </button>
+                )}
                 <div className={`mt-5 h-3 overflow-hidden rounded-full ${isLight ? 'bg-[#dde8ef]' : 'bg-[#091117]'}`}>
                   <div
                     className="h-full rounded-full bg-[linear-gradient(90deg,#2fd4c8,#8cf6a6)] transition-all duration-300"

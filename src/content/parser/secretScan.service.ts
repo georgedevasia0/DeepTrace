@@ -27,8 +27,7 @@ function pauseForUI(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-async function fetchTextWithTimeout(url: string): Promise<string> {
-  const controller = new AbortController();
+async function fetchTextWithTimeout(url: string, controller: AbortController): Promise<string> {
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
   try {
@@ -49,6 +48,8 @@ function buildScanText(content: string, capturedURLs: string[]): string {
 
 export class SecretScanService {
   private running = false;
+  private stopRequested = false;
+  private activeFetchController: AbortController | null = null;
 
   async scanCapturedURLs(): Promise<void> {
     if (this.running) {
@@ -56,8 +57,20 @@ export class SecretScanService {
     }
 
     this.running = true;
+    this.stopRequested = false;
 
     try {
+      const startedAt = new Date().toISOString();
+
+      await this.updateProgress({
+        running: true,
+        total: 0,
+        completed: 0,
+        failed: 0,
+        current: 'Starting secret scan',
+        startedAt,
+      });
+
       const tasks = await this.getScanTasks();
       await browser.storage.local.set({
         'SECRET-PARSER': {},
@@ -66,7 +79,6 @@ export class SecretScanService {
 
       let completed = 0;
       let failed = 0;
-      const startedAt = new Date().toISOString();
 
       await this.updateProgress({
         running: true,
@@ -78,6 +90,10 @@ export class SecretScanService {
       });
 
       for (const task of tasks) {
+        if (this.stopRequested) {
+          break;
+        }
+
         await this.updateProgress({
           running: true,
           total: tasks.length,
@@ -89,6 +105,11 @@ export class SecretScanService {
 
         try {
           const content = await this.getTaskContent(task);
+
+          if (this.stopRequested) {
+            break;
+          }
+
           const secrets = SecretScanner.scan(buildScanText(content, task.capturedURLs));
 
           if (task.type === 'page') {
@@ -97,8 +118,16 @@ export class SecretScanService {
             await StorageService.saveJSFileSecretsForPage(task.webpageKey, task.encodedURL, secrets);
           }
         } catch (error) {
+          if (this.stopRequested) {
+            break;
+          }
+
           failed += 1;
           console.error('Secret scan failed for URL:', task.url, error);
+        }
+
+        if (this.stopRequested) {
+          break;
         }
 
         completed += 1;
@@ -118,7 +147,7 @@ export class SecretScanService {
         total: tasks.length,
         completed,
         failed,
-        current: 'Secret scan complete',
+        current: this.stopRequested ? 'Secret scan stopped' : 'Secret scan complete',
         startedAt,
         finishedAt: new Date().toISOString(),
       });
@@ -133,8 +162,19 @@ export class SecretScanService {
         error: error instanceof Error ? error.message : String(error),
       });
     } finally {
+      this.activeFetchController = null;
       this.running = false;
+      this.stopRequested = false;
     }
+  }
+
+  stop(): void {
+    if (!this.running) {
+      return;
+    }
+
+    this.stopRequested = true;
+    this.activeFetchController?.abort();
   }
 
   async getProgress(): Promise<SecretScanProgress> {
@@ -188,11 +228,16 @@ export class SecretScanService {
       return document.documentElement?.outerHTML || document.body?.outerHTML || '';
     }
 
-    return fetchTextWithTimeout(task.url);
+    this.activeFetchController = new AbortController();
+
+    try {
+      return await fetchTextWithTimeout(task.url, this.activeFetchController);
+    } finally {
+      this.activeFetchController = null;
+    }
   }
 
   private async updateProgress(progress: SecretScanProgress): Promise<void> {
     await browser.storage.local.set({ [SECRET_SCAN_PROGRESS_KEY]: progress });
   }
 }
-
