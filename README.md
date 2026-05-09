@@ -1,13 +1,13 @@
-# EndPointer: URL Finder for JavaScript Files and Webpages
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/ppliilneafplhagjhhphcjmjdmbjagcp)](https://chrome.google.com/webstore/detail/endpointer/ppliilneafplhagjhhphcjmjdmbjagcp) ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/ppliilneafplhagjhhphcjmjdmbjagcp)
-[![Firefox Add-on](https://img.shields.io/amo/v/endpointer)](https://addons.mozilla.org/en-US/firefox/addon/endpointer/) ![Firefox Add-on Users](https://img.shields.io/amo/users/endpointer)
-![GitHub License](https://img.shields.io/github/license/AtlasWiki/endPointer)
+# DeepTrace: URL Finder for JavaScript Files and Webpages
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/ppliilneafplhagjhhphcjmjdmbjagcp)](https://chrome.google.com/webstore/detail/deeptrace/ppliilneafplhagjhhphcjmjdmbjagcp) ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/ppliilneafplhagjhhphcjmjdmbjagcp)
+[![Firefox Add-on](https://img.shields.io/amo/v/deeptrace)](https://addons.mozilla.org/en-US/firefox/addon/deeptrace/) ![Firefox Add-on Users](https://img.shields.io/amo/users/deeptrace)
+![GitHub License](https://img.shields.io/github/license/AtlasWiki/deeptrace)
 
 
 <img src="https://github.com/user-attachments/assets/ff950ea9-b861-4557-9217-e7c22f591b53">
 
-### What is EndPointer?
-EndPointer is a browser extension designed for ethical hackers and web developers to discover potentially vulnerable endpoints on the current webpage and its linked JavaScript files. It offers customizable features that allow users to control the scan settings, making it adaptable for various use cases. One standout feature is its ability to capture dynamically loaded JavaScript files, ensuring even asynchronously loaded scripts are analyzed. With EndPointer, users can efficiently identify exposed endpoints and improve the security posture of web applications. This extension was made using our custom extension template in react with many features: https://github.com/LordCat/PlaceHolder-Extension
+### What is DeepTrace?
+DeepTrace is a browser extension designed for ethical hackers and web developers to discover potentially vulnerable endpoints on the current webpage and its linked JavaScript files. It offers customizable features that allow users to control the scan settings, making it adaptable for various use cases. One standout feature is its ability to capture dynamically loaded JavaScript files, ensuring even asynchronously loaded scripts are analyzed. With DeepTrace, users can efficiently identify exposed endpoints and improve the security posture of web applications. This extension was made using our custom extension template in react with many features: https://github.com/LordCat/PlaceHolder-Extension
 
 Key Features:
 
@@ -35,7 +35,7 @@ To streamline the use of these tools, we've created an easy-to-navigate menu tha
 You have several options to download the extension. You can install it directly from the Chrome Web Store or, if you're using Firefox, from the Firefox Add-ons site. Alternatively, you can download the extension from GitHub, giving you access to the source code. For those who want to load it up locally: be sure to run `npm i && npm run build` to download all packages and to create the dist/ file. Then, load the dist/ file as unpacked in Chrome/Firefox.
 
 <div align="left">
-<a href="https://chromewebstore.google.com/detail/endpointer/ppliilneafplhagjhhphcjmjdmbjagcp"><img src="https://github.com/user-attachments/assets/834eb360-3809-421c-9223-7b254957ae37" alt="image (1)" width="170"/></a><a href="https://addons.mozilla.org/en-US/firefox/addon/endpointer/"><img src="https://github.com/user-attachments/assets/7585ac45-b59d-4d9e-a4a3-ddfd2d59b533" alt="image (2)" width="170"/></a>
+<a href="https://chromewebstore.google.com/detail/deeptrace/ppliilneafplhagjhhphcjmjdmbjagcp"><img src="https://github.com/user-attachments/assets/834eb360-3809-421c-9223-7b254957ae37" alt="image (1)" width="170"/></a><a href="https://addons.mozilla.org/en-US/firefox/addon/deeptrace/"><img src="https://github.com/user-attachments/assets/7585ac45-b59d-4d9e-a4a3-ddfd2d59b533" alt="image (2)" width="170"/></a>
 </div>
 
 <br>
@@ -43,7 +43,7 @@ You have several options to download the extension. You can install it directly 
 <a name="Functionalities"></a>
 <h2><img src="https://github.com/user-attachments/assets/499bb537-9478-4341-8d55-773069796de8" width="30"> Key Features & Functionalities</h2>
 
-EndPointer offers a wide range of capabilities aimed at simplifying the process of finding and analyzing endpoints across webpages and JavaScript files. Designed with flexibility and ease of use in mind, this tool allows users to control parsing behavior, interact with results, and dynamically capture changes in web content. Whether you need real-time updates or manual control, EndPointer provides the tools necessary to streamline the process of endpoint discovery and security analysis.
+DeepTrace offers a wide range of capabilities aimed at simplifying the process of finding and analyzing endpoints across webpages and JavaScript files. Designed with flexibility and ease of use in mind, this tool allows users to control parsing behavior, interact with results, and dynamically capture changes in web content. Whether you need real-time updates or manual control, DeepTrace provides the tools necessary to streamline the process of endpoint discovery and security analysis.
 
 Key Features:
 

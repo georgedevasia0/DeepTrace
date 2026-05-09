@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "EndPointer",
+  "name": "DeepTrace",
   "version": "1.0.0",
   "description": "An endpoint parser and extractor with many flexible features",
   "icons": {
-    "16": "icons/EndPointer.png",
-    "32": "icons/EndPointer.png",
-    "48": "icons/EndPointer.png",
-    "128": "icons/EndPointer.png"
+    "16": "icons/DeepTrace.png",
+    "32": "icons/DeepTrace.png",
+    "48": "icons/DeepTrace.png",
+    "128": "icons/DeepTrace.png"
   },
   "permissions": [
     "storage",
@@ -16,7 +16,7 @@
   "action": {
     "default_popup": "PopUp/popup.html",
     "default_title": "Endpoint Extractor for Hackers",
-    "default_icon": "icons/EndPointer.png"
+    "default_icon": "icons/DeepTrace.png"
   },
   "background": {
     "scripts": ["background.js"],

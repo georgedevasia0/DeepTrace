@@ -5,7 +5,7 @@ import { MessageResponse, URLParserStorage, URLParserStorageItem } from "../cons
 import { useThemeMode } from "../hooks/useThemeMode";
 import { SecretParserStorage, SecretParserStorageItem, SecretScanProgress } from "../constants/secret_types";
 
-const Logo = "/icons/EndPointer.png";
+const Logo = "/icons/DeepTrace.png";
 
 interface AppState {
   urlParser: boolean;
@@ -369,14 +369,14 @@ function PopUpApp() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-4">
                 <div className={`rounded-[26px] border p-3 shadow-[0_16px_50px_rgba(0,0,0,0.12)] ${isLight ? 'border-[#d4e2ec] bg-[#f7fbff]' : 'border-[#35535e] bg-[linear-gradient(180deg,rgba(19,35,43,0.98),rgba(10,19,25,0.98))]'}`}>
-                  <img src={Logo} alt="EndPointer logo" className="h-16 w-16 rounded-2xl object-contain" />
+                  <img src={Logo} alt="DeepTrace logo" className="h-16 w-16 rounded-2xl object-contain" />
                 </div>
                 <div className="min-w-0">
                   <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.26em] ${isLight ? 'border-[#b7d2e0] bg-[#f3fbff] text-[#14526a]' : 'border-[#345a67] bg-[#10252d]/90 text-[#93d8e9]'}`}>
                     Firefox Endpoint Intelligence
                   </div>
                   <h1 className={`mt-3 bg-clip-text text-5xl font-black tracking-[-0.04em] text-transparent ${isLight ? 'bg-[linear-gradient(135deg,#c84f33_0%,#ef7b57_48%,#b83b2f_100%)]' : 'bg-[linear-gradient(135deg,#fff5f1_10%,#ff8d6c_55%,#ff6c4a_100%)]'}`}>
-                    EndPointer
+                    DeepTrace
                   </h1>
                   <p className={`mt-3 max-w-[420px] text-sm leading-7 ${bodyTextClass}`}>
                     Parse live pages, inspect discovered endpoints, and move from reconnaissance to triage inside a cleaner, more professional operator console.
@@ -655,7 +655,7 @@ function PopUpApp() {
                 {state.scopes.length === 0 ? (
                   <div className={`rounded-[22px] border border-dashed px-4 py-8 text-center ${isLight ? 'border-[#d8e5ed]' : 'border-[#365461]'}`}>
                     <div className={`text-[11px] uppercase tracking-[0.22em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>No Scope Rules</div>
-                    <div className={`mt-2 text-sm ${mutedTextClass}`}>EndPointer is currently free to parse all eligible hosts.</div>
+                    <div className={`mt-2 text-sm ${mutedTextClass}`}>DeepTrace is currently free to parse all eligible hosts.</div>
                   </div>
                 ) : (
                   <div className="flex max-h-44 flex-col gap-3 overflow-auto pr-1">
@@ -680,10 +680,10 @@ function PopUpApp() {
 
             <div className={`flex items-center justify-between gap-4 border-t px-1 pt-1 ${isLight ? 'border-[#d7e5ee]' : 'border-[#1f333b]'}`}>
               <p className={`max-w-xl text-xs leading-6 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                Built for security research and endpoint discovery by the EndPointer contributors. Designed to feel closer to a premium analysis cockpit than a browser utility.
+                Built for security research and endpoint discovery by the DeepTrace contributors. Designed to feel closer to a premium analysis cockpit than a browser utility.
               </p>
               <a
-                href="https://github.com/AtlasWiki/endPointer/"
+                href="https://github.com/AtlasWiki/deeptrace/"
                 target="_blank"
                 className="rounded-full border border-[#314f5a] bg-[#101d24] p-3 text-slate-300 transition-all duration-200 hover:border-[#79d5ea] hover:text-white"
               >

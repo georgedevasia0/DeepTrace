@@ -1,11 +1,11 @@
-#Privacy Policy for EndPointer
+#Privacy Policy for DeepTrace
 Last updated: 8/10/2024
 
 ##Overview
-Endpointer is committed to protecting your privacy. This Privacy Policy explains our practices regarding the collection, use, and disclosure of information through our Chrome extension.
+DeepTrace is committed to protecting your privacy. This Privacy Policy explains our practices regarding the collection, use, and disclosure of information through our Chrome extension.
 
 ##Data Collection
-EndPointer does not collect, store, or transmit any personal information or user data.
+DeepTrace does not collect, store, or transmit any personal information or user data.
 
 ##Changes to Our Extension
 If we decide to change our extension in a way that results in the collection of personal information or user data, we will update this Privacy Policy accordingly and notify users of the changes.

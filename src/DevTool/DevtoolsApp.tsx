@@ -3,7 +3,7 @@ import browser from 'webextension-polyfill'
 import { useNavigate } from 'react-router-dom'
 import './index.css'
 import './App.css'
-import Logo from '../../public/icons/EndPointer.png';
+import Logo from '../../public/icons/DeepTrace.png';
 
 
 function DevToolsApp() {
@@ -103,7 +103,7 @@ function DevToolsApp() {
             <div className="mt-10 mb-10 w-full">
         <div className=" mb-3 flex items-center gap-1">
           <img src={Logo} style={{ width: "5%", height: "5%" }} />
-          <h1 className="text-xl ml-6 text-customRed md:text-4xl font-bold">EndPointer <span className='text-white'> Dashboard </span> </h1>
+          <h1 className="text-xl ml-6 text-customRed md:text-4xl font-bold">DeepTrace <span className='text-white'> Dashboard </span> </h1>
         </div>
         {/* <p className="text-white md:text-lg">An endpoint parser and extractor with many flexible features by AtlasWiki/mrunoriginal and LordCat</p> */}
         <hr className="w-full mt-5"></hr>

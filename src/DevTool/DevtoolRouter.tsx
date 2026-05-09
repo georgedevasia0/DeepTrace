@@ -23,7 +23,7 @@ function getDevToolPath() {
 
 // Create the DevTools panel
 browser.devtools.panels.create(
-  "endPointer",
+  "deeptrace",
   "",
   getDevToolPath(),
 ).then((panel: any) => {
