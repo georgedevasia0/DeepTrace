@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill';
 import { Endpoint, Location, Webpage, URLParserStorage, URLParserStorageItem } from '../constants/message_types';
-import { shouldCaptureEndpoint } from './endpointFilter';
+import { shouldCaptureEndpoint, shouldCaptureSource } from './endpointFilter';
 
 interface FormattedURLData {
   allEndpoints: Endpoint[];
@@ -110,6 +110,10 @@ export async function formatURLData(): Promise<FormattedURLData> {
       // Handle JS file endpoints
       Object.entries(item.externalJSFiles).forEach(([jsFile, endpoints]) => {
         const decodedJsFile = decodeURIComponent(jsFile);
+        if (!shouldCaptureSource(decodedJsFile)) {
+          return;
+        }
+
         if (!locations.includes(decodedJsFile)) {
           locations.push(decodedJsFile);
         }

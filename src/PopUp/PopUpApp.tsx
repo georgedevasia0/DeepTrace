@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import browser from "webextension-polyfill";
+import QRCode from "qrcode";
 import "./App.css";
 import { MessageResponse, URLParserStorage, URLParserStorageItem } from "../constants/message_types";
 import { useThemeMode } from "../hooks/useThemeMode";
 import { SecretParserStorage, SecretParserStorageItem, SecretScanProgress } from "../constants/secret_types";
 
 const Logo = "/icons/DeepTrace.png";
+const DonationPaypalUrl = "https://paypal.me/georgedevasia";
+const DonationUpiId = "georgedevasia12@okicici";
+const DonationUpiUri = `upi://pay?pa=${DonationUpiId}&pn=George%20Devasia&tn=DeepTrace%20Donation`;
 
 interface AppState {
   urlParser: boolean;
@@ -62,6 +66,33 @@ function ActionButton({ label, onClick, href, variant = "secondary", icon }: Act
   );
 }
 
+function PayPalIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7.2 21h-3l3.1-18h7.6c3.2 0 5.4 2 4.9 5.2c-.4 2.8-2.5 4.8-5.7 4.8h-3.4zm4-10.5h2.8c1.7 0 2.8-.9 3.1-2.4c.2-1.5-.7-2.6-2.4-2.6H9.8z"
+      />
+      <path
+        fill="currentColor"
+        opacity="0.72"
+        d="M10.1 21H7.2l2.4-13.8h6.6c2.8 0 4.6 1.8 4.2 4.4c-.4 2.5-2.2 4.1-5.1 4.1h-3.1z"
+      />
+    </svg>
+  );
+}
+
+function GooglePayIcon({ size = 48 }) {
+  return (
+    <img
+      src="/icons/google-pay.png"
+      alt="Google Pay"
+      width={size}
+      className="shrink-0 object-contain"
+    />
+  );
+}
+
 function safeDecodeURIComponent(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -72,6 +103,12 @@ function safeDecodeURIComponent(value: string): string {
 
 function PopUpApp() {
   const { themeMode, isLight, toggleTheme } = useThemeMode();
+  const [paypalCopied, setPaypalCopied] = useState(false);
+  const [showPaypalQr, setShowPaypalQr] = useState(false);
+  const [paypalQrDataUrl, setPaypalQrDataUrl] = useState("");
+  const [upiCopied, setUpiCopied] = useState(false);
+  const [showUpiQr, setShowUpiQr] = useState(false);
+  const [upiQrDataUrl, setUpiQrDataUrl] = useState("");
   const [state, setState] = useState<AppState>({
     urlParser: false,
     urlCount: 0,
@@ -109,6 +146,30 @@ function PopUpApp() {
     return () => {
       browser.storage.onChanged.removeListener(listener);
     };
+  }, []);
+
+  useEffect(() => {
+    const qrOptions = {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      width: 224,
+      color: {
+        dark: "#071218",
+        light: "#ffffff",
+      },
+    } as const;
+
+    QRCode.toDataURL(DonationPaypalUrl, qrOptions)
+      .then(setPaypalQrDataUrl)
+      .catch((error) => {
+        console.error("Failed to generate PayPal QR code:", error);
+      });
+
+    QRCode.toDataURL(DonationUpiUri, qrOptions)
+      .then(setUpiQrDataUrl)
+      .catch((error) => {
+        console.error("Failed to generate UPI QR code:", error);
+      });
   }, []);
 
   const updateExtensionBadge = async (urlParserState: boolean) => {
@@ -333,6 +394,26 @@ function PopUpApp() {
   const clearAllScopes = () => {
     browser.storage.local.set({ scope: [] });
     setState((prevState) => ({ ...prevState, scopes: [] }));
+  };
+
+  const handleCopyPaypalUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(DonationPaypalUrl);
+      setPaypalCopied(true);
+      window.setTimeout(() => setPaypalCopied(false), 1600);
+    } catch (error) {
+      console.error("Failed to copy PayPal link:", error);
+    }
+  };
+
+  const handleCopyUpiId = async () => {
+    try {
+      await navigator.clipboard.writeText(DonationUpiId);
+      setUpiCopied(true);
+      window.setTimeout(() => setUpiCopied(false), 1600);
+    } catch (error) {
+      console.error("Failed to copy UPI ID:", error);
+    }
   };
 
   const statusTone = state.urlParser
@@ -702,26 +783,105 @@ function PopUpApp() {
                   <div>
                     <div className={`text-[11px] uppercase tracking-[0.22em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Buy Me A Coffee</div>
                     <p className={`mt-2 max-w-md text-xs leading-6 ${mutedTextClass}`}>
-                      Support EndPointer development with a small donation.
+                      Support DeepTrace development with a small donation.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <a
-                      href="https://paypal.me/georgedevasia"
-                      target="_blank"
-                      className="rounded-full border border-[#79d5ea] bg-[linear-gradient(135deg,#17404d,#236376)] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:border-[#a8ebf8]"
+                    <button
+                      type="button"
+                      onClick={() => setShowPaypalQr((isOpen) => !isOpen)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#79d5ea] bg-[linear-gradient(135deg,#17404d,#236376)] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:border-[#a8ebf8]"
                     >
+                      <PayPalIcon />
                       PayPal
-                    </a>
-                    <a
-                      href="upi://pay?pa=georgedevasia12@okicici&pn=George%20Devasia&tn=EndPointer%20Donation"
-                      target="_blank"
-                      className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-all duration-200 ${isLight ? 'border-[#c8dce7] bg-[#f5fbff] text-[#275d72] hover:border-[#7dc8dd]' : 'border-[#355966] bg-[#102129] text-[#9bd9ea] hover:border-[#7ad4e7]'}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowUpiQr((isOpen) => !isOpen)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-all duration-200 ${isLight ? 'border-[#c8dce7] bg-[#f5fbff] text-[#275d72] hover:border-[#7dc8dd]' : 'border-[#355966] bg-[#102129] text-[#9bd9ea] hover:border-[#7ad4e7]'}`}
                     >
-                      Google Pay
-                    </a>
+                      <GooglePayIcon />
+                      Google Pay UPI
+                    </button>
                   </div>
                 </div>
+                {showPaypalQr && (
+                  <div className={`mt-4 grid gap-4 rounded-[22px] border p-4 md:grid-cols-[auto_1fr] ${isLight ? 'border-[#d7e5ee] bg-[#f7fbff]' : 'border-[#31515c] bg-[#112028]'}`}>
+                    <div className="flex justify-center">
+                      {paypalQrDataUrl ? (
+                        <img
+                          src={paypalQrDataUrl}
+                          alt="PayPal donation QR code"
+                          className="h-48 w-48 rounded-[18px] border border-white/10 bg-white p-2"
+                        />
+                      ) : (
+                        <div className={`flex h-48 w-48 items-center justify-center rounded-[18px] border text-xs ${isLight ? 'border-[#d7e5ee] bg-white text-slate-500' : 'border-[#31515c] bg-[#0c161b] text-slate-400'}`}>
+                          Generating QR
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <div className={`text-[11px] uppercase tracking-[0.22em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Scan With PayPal</div>
+                      <p className={`mt-2 text-xs leading-6 ${mutedTextClass}`}>
+                        Scan this QR code from your phone, or open the donation page in this browser.
+                      </p>
+                      <div className={`mt-3 rounded-[16px] border px-3 py-2 font-mono text-xs ${isLight ? 'border-[#d7e5ee] bg-white text-slate-700' : 'border-[#31515c] bg-[#0c161b] text-slate-200'}`}>
+                        {DonationPaypalUrl}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <a
+                          href={DonationPaypalUrl}
+                          target="_blank"
+                          className="inline-flex items-center gap-2 rounded-full border border-[#79d5ea] bg-[linear-gradient(135deg,#17404d,#236376)] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:border-[#a8ebf8]"
+                        >
+                          <PayPalIcon />
+                          Open PayPal
+                        </a>
+                        <button
+                          type="button"
+                          onClick={handleCopyPaypalUrl}
+                          className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-all duration-200 ${isLight ? 'border-[#c8dce7] bg-[#ffffff] text-[#275d72] hover:border-[#7dc8dd]' : 'border-[#355966] bg-[#102129] text-[#9bd9ea] hover:border-[#7ad4e7]'}`}
+                        >
+                          {paypalCopied ? 'Copied' : 'Copy PayPal Link'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {showUpiQr && (
+                  <div className={`mt-4 grid gap-4 rounded-[22px] border p-4 md:grid-cols-[auto_1fr] ${isLight ? 'border-[#d7e5ee] bg-[#f7fbff]' : 'border-[#31515c] bg-[#112028]'}`}>
+                    <div className="flex justify-center">
+                      {upiQrDataUrl ? (
+                        <img
+                          src={upiQrDataUrl}
+                          alt="Google Pay UPI QR code"
+                          className="h-48 w-48 rounded-[18px] border border-white/10 bg-white p-2"
+                        />
+                      ) : (
+                        <div className={`flex h-48 w-48 items-center justify-center rounded-[18px] border text-xs ${isLight ? 'border-[#d7e5ee] bg-white text-slate-500' : 'border-[#31515c] bg-[#0c161b] text-slate-400'}`}>
+                          Generating QR
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <div className={`text-[11px] uppercase tracking-[0.22em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Scan With Google Pay</div>
+                      <p className={`mt-2 text-xs leading-6 ${mutedTextClass}`}>
+                        Scan this QR code from your phone, or copy the UPI ID and paste it into any UPI app.
+                      </p>
+                      <div className={`mt-3 rounded-[16px] border px-3 py-2 font-mono text-xs ${isLight ? 'border-[#d7e5ee] bg-white text-slate-700' : 'border-[#31515c] bg-[#0c161b] text-slate-200'}`}>
+                        {DonationUpiId}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyUpiId}
+                        className={`mt-3 inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-all duration-200 ${isLight ? 'border-[#c8dce7] bg-[#ffffff] text-[#275d72] hover:border-[#7dc8dd]' : 'border-[#355966] bg-[#102129] text-[#9bd9ea] hover:border-[#7ad4e7]'}`}
+                      >
+                        <GooglePayIcon />
+                        {upiCopied ? 'Copied' : 'Copy UPI ID'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
