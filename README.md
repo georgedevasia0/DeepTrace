@@ -1,13 +1,12 @@
 # DeepTrace: URL Finder for JavaScript Files and Webpages
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/ppliilneafplhagjhhphcjmjdmbjagcp)](https://chrome.google.com/webstore/detail/deeptrace/ppliilneafplhagjhhphcjmjdmbjagcp) ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/ppliilneafplhagjhhphcjmjdmbjagcp)
 [![Firefox Add-on](https://img.shields.io/amo/v/deeptrace)](https://addons.mozilla.org/en-US/firefox/addon/deeptrace/) ![Firefox Add-on Users](https://img.shields.io/amo/users/deeptrace)
 ![GitHub License](https://img.shields.io/github/license/georgedevasia0/EndPointer)
 
 
-<img src="https://github.com/user-attachments/assets/ff950ea9-b861-4557-9217-e7c22f591b53">
+![alt text](public/icons/DeepTrace-banner.png)
 
 ### What is DeepTrace?
-DeepTrace is a browser extension designed for ethical hackers and web developers to discover potentially vulnerable endpoints on the current webpage and its linked JavaScript files. It offers customizable features that allow users to control the scan settings, making it adaptable for various use cases. One standout feature is its ability to capture dynamically loaded JavaScript files, ensuring even asynchronously loaded scripts are analyzed. With DeepTrace, users can efficiently identify exposed endpoints and improve the security posture of web applications. This extension was made using our custom extension template in react with many features: https://github.com/LordCat/PlaceHolder-Extension
+DeepTrace is a browser extension designed for ethical hackers and web developers to discover potentially vulnerable endpoints on the current webpage and its linked JavaScript files. It offers customizable features that allow users to control the scan settings, making it adaptable for various use cases. One standout feature is its ability to capture dynamically loaded JavaScript files, ensuring even asynchronously loaded scripts are analyzed. With DeepTrace, users can efficiently identify exposed endpoints and improve the security posture of web applications. This extension was made using our custom extension template in react with many features.
 
 Key Features:
 
@@ -18,24 +17,21 @@ Key Features:
 - ...
 
 <br>
-<p align="center"><a href="#Download"><img src="https://github.com/user-attachments/assets/5ed1d651-ea44-4f00-87ad-b3fcb3e75e68"></a></p>
-
-To streamline the use of these tools, we've created an easy-to-navigate menu that lets you quickly select the information you need. Below, you can find information for <b>downloading the tool, exploring its features, checking ongoing development, and learning about our generous contributors</b>.
+<p align="center"><a href="#Download"><img src="public/icons/DeepTrace.png"></a></p>
 
 <br>
 <br>
 <div align="center">
-<a href="#Download"><img src="https://github.com/user-attachments/assets/0a9ff34c-eb1b-4b84-a0ab-0a53e9b733af" alt="image (1)" width="83.5"/></a><a href="#Functionalities"><img src="https://github.com/user-attachments/assets/81d51a7e-f179-4d62-bbe3-cc9617bcfe07" alt="image (2)" width="70"/></a><a href="#Development"><img src="https://github.com/user-attachments/assets/f724c998-5ae3-456f-a863-225978ac25c3" alt="image (3)" width="70"/></a><a href="#Contributors"><img src="https://github.com/user-attachments/assets/efbfa71d-37df-4b6c-ae42-4c5d70132a8d" alt="image (4)" width="84"/></a>
 </div>
 <br>
 
 <a name="Download"></a>
 <h2><img src="https://github.com/user-attachments/assets/466328bf-6dce-4cf3-bb53-ce427e8d7f25" width="30"> Download & Installation</h2>
 
-You have several options to download the extension. You can install it directly from the Chrome Web Store or, if you're using Firefox, from the Firefox Add-ons site. Alternatively, you can download the extension from GitHub, giving you access to the source code. For those who want to load it up locally: be sure to run `npm i && npm run build` to download all packages and to create the dist/ file. Then, load the dist/ file as unpacked in Chrome/Firefox.
+You have several options to download the extension. You can install it directly from Firefox, from the Firefox Add-ons site. Alternatively, you can download the extension from GitHub, giving you access to the source code. For those who want to load it up locally: be sure to run `npm i && npm run build` to download all packages and to create the dist/ file. Then, load the dist/ file as unpacked in Firefox.
 
 <div align="left">
-<a href="https://chromewebstore.google.com/detail/deeptrace/ppliilneafplhagjhhphcjmjdmbjagcp"><img src="https://github.com/user-attachments/assets/834eb360-3809-421c-9223-7b254957ae37" alt="image (1)" width="170"/></a><a href="https://addons.mozilla.org/en-US/firefox/addon/deeptrace/"><img src="https://github.com/user-attachments/assets/7585ac45-b59d-4d9e-a4a3-ddfd2d59b533" alt="image (2)" width="170"/></a>
+<a href="https://addons.mozilla.org/en-US/firefox/addon/deeptrace/"><img src="https://github.com/user-attachments/assets/7585ac45-b59d-4d9e-a4a3-ddfd2d59b533" alt="image (2)" width="170"/></a>
 </div>
 
 <br>
@@ -81,19 +77,6 @@ Fixes:
   - [ ] Fixe 3
 
 <br>
-
-<a name="Contributors"></a>
-<h2><img src="https://github.com/user-attachments/assets/e4c573d8-62cb-42e1-a95e-b20264e5e2bb" width="30"> Contributors</h2>
-
-This tool has been developed in-house by Interloper Security Group, a loose knit collection of developers and cybersecurity specialists.
-The tool has benefited from the invaluable contributions of individuals who have helped enhance specific features and functionality. We would like to acknowledge and thank those who have generously offered their expertise and support. Your efforts have played a key role in making this tool more robust and effective.
-
-Creators / Developers:
-- <p><a href="https://github.com/AtlasWiki">AtlasWiki / mrunoriginal</a> <a href="https://www.linkedin.com/in/nathan-w-76ba78202/"><img height="20" src="https://cdn2.iconfinder.com/data/icons/social-icon-3/512/social_style_3_in-306.png"/></a> <a href="https://github.com/AtlasWiki"><img height="20" src="https://github.com/user-attachments/assets/6bb139a7-b21a-4d05-ae32-1eedab692041"/></a> <a href="https://discord.com/"><img height="20" src="https://github.com/user-attachments/assets/c34d7a96-88dd-4d05-806d-4993c3a1917e"/></a></p>
-- <p><a href="https://github.com/LordCat">LordCat / Dooma</a> <a href="https://www.linkedin.com/in/kristian-alex-kelly/"><img height="20" src="https://cdn2.iconfinder.com/data/icons/social-icon-3/512/social_style_3_in-306.png"/></a> <a href="https://github.com/LordCat"><img height="20" src="https://github.com/user-attachments/assets/6bb139a7-b21a-4d05-ae32-1eedab692041"/></a>  <a href="https://discord.com/"><img height="20" src="https://github.com/user-attachments/assets/525f3024-68c7-4d6d-adab-4eb21d655743"/></a></p>
-
-Contributors:
-- <p><a href="https://github.com/Hacking-Notes">Hacking Notes</a> <a href="https://www.linkedin.com/in/alexis-savard/"><img height="20" src="https://cdn2.iconfinder.com/data/icons/social-icon-3/512/social_style_3_in-306.png"/></a> <a href="https://github.com/Hacking-Notes"><img height="20" src="https://github.com/user-attachments/assets/6bb139a7-b21a-4d05-ae32-1eedab692041"/></a> <a href="https://discord.com/"><img height="20" src="https://github.com/user-attachments/assets/1afd8d87-50fb-49b0-93a7-11a93dfed826"/></a></p>
 
 <br>
 
