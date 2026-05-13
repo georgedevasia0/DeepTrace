@@ -17,6 +17,6 @@
 * Devtools no longer needs to take up to 75% of the window screen for visibility
 
 
-**Full Changelog**: https://github.com/AtlasWiki/DeepTrace/compare/v0.1.0...v1.0.0
+**Full Changelog**: https://github.com/georgedevasia0/EndPointer/compare/v0.1.0...v1.0.0
 
 # v0.1.0 - Initial Release

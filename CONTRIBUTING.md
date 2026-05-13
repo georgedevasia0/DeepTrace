@@ -3,17 +3,8 @@ This tool has benefited from the invaluable contributions of individuals who hav
 <br>
 
 Creators / Developers:
-1. AtlasWiki / mrunoriginal
-2. LordCat / Dooma   
+1. George Devasia
+ 
 
 <br>
 
-Contributors:
-1. Hacking Notes    
-
-<br>
-
-How to contribute:
-1. Clone the repo
-2. Create a branch called Contribution/{feature name}
-3. Send a pull request to this repo with your changes from Contribution/{feature name}

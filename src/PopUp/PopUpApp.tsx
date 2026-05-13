@@ -678,22 +678,51 @@ function PopUpApp() {
               </div>
             </section>
 
-            <div className={`flex items-center justify-between gap-4 border-t px-1 pt-1 ${isLight ? 'border-[#d7e5ee]' : 'border-[#1f333b]'}`}>
-              <p className={`max-w-xl text-xs leading-6 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                Built for security research and endpoint discovery by the DeepTrace contributors. Designed to feel closer to a premium analysis cockpit than a browser utility.
-              </p>
-              <a
-                href="https://github.com/AtlasWiki/deeptrace/"
-                target="_blank"
-                className="rounded-full border border-[#314f5a] bg-[#101d24] p-3 text-slate-300 transition-all duration-200 hover:border-[#79d5ea] hover:text-white"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
-                  />
-                </svg>
-              </a>
+            <div className={`flex flex-col gap-4 border-t px-1 pt-1 ${isLight ? 'border-[#d7e5ee]' : 'border-[#1f333b]'}`}>
+              <div className="flex items-center justify-between gap-4">
+                <p className={`max-w-xl text-xs leading-6 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
+                  Built for security research and endpoint discovery by the DeepTrace contributors. Designed to feel closer to a premium analysis cockpit than a browser utility.
+                </p>
+                <a
+                  href="https://github.com/georgedevasia0/EndPointer"
+                  target="_blank"
+                  className="rounded-full border border-[#314f5a] bg-[#101d24] p-3 text-slate-300 transition-all duration-200 hover:border-[#79d5ea] hover:text-white"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
+                    />
+                  </svg>
+                </a>
+              </div>
+
+              <div className={`rounded-[26px] border p-4 ${isLight ? 'border-[#d7e5ee] bg-[#ffffff]' : 'border-[#2d4d58] bg-[#0c161b]/92'}`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className={`text-[11px] uppercase tracking-[0.22em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Buy Me A Coffee</div>
+                    <p className={`mt-2 max-w-md text-xs leading-6 ${mutedTextClass}`}>
+                      Support EndPointer development with a small donation.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href="https://paypal.me/georgedevasia"
+                      target="_blank"
+                      className="rounded-full border border-[#79d5ea] bg-[linear-gradient(135deg,#17404d,#236376)] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:border-[#a8ebf8]"
+                    >
+                      PayPal
+                    </a>
+                    <a
+                      href="upi://pay?pa=georgedevasia12@okicici&pn=George%20Devasia&tn=EndPointer%20Donation"
+                      target="_blank"
+                      className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-all duration-200 ${isLight ? 'border-[#c8dce7] bg-[#f5fbff] text-[#275d72] hover:border-[#7dc8dd]' : 'border-[#355966] bg-[#102129] text-[#9bd9ea] hover:border-[#7ad4e7]'}`}
+                    >
+                      Google Pay
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
