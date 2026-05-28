@@ -30,6 +30,7 @@ export async function handleSendRequest(endpoint: Endpoint, method: HttpMethod, 
     const response = await fetch(requestDetails.url, {
       method: requestDetails.method,
       headers: requestDetails.headers,
+      credentials: 'include',
       ...(method !== 'GET' && { body: requestDetails.body })
     });
 

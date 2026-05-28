@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import browser from 'webextension-polyfill';
 import { Endpoint } from '../constants/message_types';
 import { highlightSearchQuery } from '../utils/defaultview_utils';
 import { MODAL_NAMES, CSS_CLASSES, ClassificationType, ClassificationMapping} from '../constants/defaultview_contants';
@@ -18,7 +19,7 @@ interface URLPropsProps {
 
 export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected, onToggleSelect, isLight = false }: URLPropsProps) {
   const [openModal, setOpenModal] = useState<keyof typeof MODAL_NAMES | null>(null);
-  const [showCopyToast, setShowCopyToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const closeModal = () => setOpenModal(null);
   const copyIconButtonClass = isLight
@@ -64,17 +65,51 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
   const handleCopy = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      setShowCopyToast(true);
-      window.setTimeout(() => setShowCopyToast(false), 1600);
+      setToastMessage('Copied');
+      window.setTimeout(() => setToastMessage(null), 1600);
     } catch (error) {
       console.error('Failed to copy value:', error);
     }
   };
+
+  const handleOpenSourceViewer = async (source: string) => {
+    const url = browser.runtime.getURL(`SourceViewer/SourceViewer.html?source=${encodeURIComponent(source)}`);
+
+    try {
+      try {
+        const sourceOrigin = new URL(source).origin;
+        await browser.permissions.request({ origins: [`${sourceOrigin}/*`] });
+      } catch (error) {
+        console.warn('Could not request source host permission before opening viewer:', error);
+      }
+
+      await browser.tabs.create({ url });
+    } catch (error) {
+      console.error('Failed to open source viewer:', error);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const CopyIconButton = ({ value, label }: { value: string; label: string }) => (
     <button type="button" className={copyIconButtonClass} onClick={() => handleCopy(value)} aria-label={label} title={label}>
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none">
         <path d="M9 9.75A2.25 2.25 0 0 1 11.25 7.5h7.5A2.25 2.25 0 0 1 21 9.75v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5A2.25 2.25 0 0 1 9 17.25z" stroke="currentColor" strokeWidth="1.7"/>
         <path d="M15 7.5V6.75A2.25 2.25 0 0 0 12.75 4.5h-7.5A2.25 2.25 0 0 0 3 6.75v7.5a2.25 2.25 0 0 0 2.25 2.25H6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+      </svg>
+    </button>
+  );
+  const SourceViewerIconButton = ({ source }: { source: string }) => (
+    <button
+      type="button"
+      className={copyIconButtonClass}
+      onClick={() => handleOpenSourceViewer(source)}
+      aria-label={`Open beautified source ${source}`}
+      title="Open beautified source"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 2.75a5 5 0 0 1 4.7 3.3a5 5 0 0 1 3.03 8.58a5 5 0 0 1-6.75 6.17a5 5 0 0 1-7.68-3.25a5 5 0 0 1-1.04-9.1A5 5 0 0 1 12 2.75Z" stroke="currentColor" strokeWidth="1.55" strokeLinejoin="round"/>
+        <path d="M8.1 8.25l3.9-2.24l3.9 2.24v4.5L12 15l-3.9-2.25Z" stroke="currentColor" strokeWidth="1.55" strokeLinejoin="round"/>
+        <path d="M12 6.01v4.49l3.9 2.25M12 10.5l-3.9 2.25M12 15v4.25" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </button>
   );
@@ -143,6 +178,7 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
             <div className="text-[11px] uppercase tracking-[0.2em] text-[#7eaabc]">{sanitizedSourceLabel}</div>
             <div className={`mt-2 flex items-start gap-2 text-sm leading-6 ${mainTextClass}`}>
               <div className="min-w-0 flex-1 whitespace-normal break-all">{endpoint.foundAt}</div>
+              <SourceViewerIconButton source={endpoint.foundAt} />
               <CopyIconButton value={endpoint.foundAt} label={`Copy source ${endpoint.foundAt}`} />
             </div>
           </div>
@@ -159,8 +195,8 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
           </div>
         </td>
       </tr>
-      {showCopyToast && (
-        <div className={toastClass}>Copied</div>
+      {toastMessage && (
+        <div className={toastClass}>{toastMessage}</div>
       )}
     </>
   );

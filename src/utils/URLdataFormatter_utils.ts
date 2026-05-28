@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill';
 import { Endpoint, Location, Webpage, URLParserStorage, URLParserStorageItem } from '../constants/message_types';
-import { shouldCaptureEndpoint, shouldCaptureSource } from './endpointFilter';
+import { shouldCaptureEndpoint, shouldCaptureSource, shouldCaptureWebpage } from './endpointFilter';
 
 interface FormattedURLData {
   allEndpoints: Endpoint[];
@@ -89,6 +89,10 @@ export async function formatURLData(): Promise<FormattedURLData> {
   Object.entries(urlParserData).forEach(([key, value]) => {
     if (key !== "current" && typeof value !== 'string' && value !== undefined) {
       const webpage = decodeURIComponent(key);
+      if (!shouldCaptureWebpage(webpage)) {
+        return;
+      }
+
       const item = value as URLParserStorageItem;
       
       locations.push(webpage);

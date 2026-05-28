@@ -7,6 +7,7 @@ import { URLParserStorageItem } from './parser/parser.types';
 import { ProgressBar } from '../components/ProgressBar';
 import { SecretScanService } from './parser/secretScan.service';
 import { SecretScanProgress } from '../constants/secret_types';
+import { shouldCaptureWebpage } from '../utils/endpointFilter';
 
 import browser from 'webextension-polyfill'
 
@@ -60,6 +61,10 @@ export class Parser {
     
     const host: string = document.location.hostname;
     if (await StorageService.isInScope(host)) {
+      if (!shouldCaptureWebpage(document.location.href)) {
+        return;
+      }
+
       this.progressBar.update(0, 'Parsing...');
       
       try {

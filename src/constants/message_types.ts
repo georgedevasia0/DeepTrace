@@ -15,6 +15,7 @@ export type MessageAction =
   | 'reparse'
   | 'getRequestDetails'
   | 'checkContentScriptInjected'
+  | 'extractSourceContent'
   | 'autoParserStateChanged'
   | 'sendRequest'
   | 'clearResponseCache'

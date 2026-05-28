@@ -2,7 +2,7 @@ import browser from 'webextension-polyfill';
 import { URLParserStorageWithOptionalCurrent, URLParserStorageItem } from './parser.types';
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
 import { decode } from 'punycode';
-import { shouldCaptureEndpoint, shouldCaptureSource } from '../../utils/endpointFilter';
+import { shouldCaptureEndpoint, shouldCaptureSource, shouldCaptureWebpage } from '../../utils/endpointFilter';
 import { SecretParserStorage, SecretParserStorageItem, StoredSecret } from '../../constants/secret_types';
 
 function safeDecodeURIComponent(value: string): string {
@@ -33,6 +33,10 @@ export class StorageService {
     const urlParser = (result['URL-PARSER'] as URLParserStorageWithOptionalCurrent) || {};
     const currentURL = urlParser.current || '';
     const decodedURL = decodeURIComponent(encodedURL);
+
+    if (!shouldCaptureWebpage(safeDecodeURIComponent(currentURL))) {
+      return;
+    }
 
     if (!shouldCaptureSource(decodedURL)) {
       return;

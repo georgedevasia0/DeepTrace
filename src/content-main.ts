@@ -5,6 +5,18 @@ import { Message, MessageResponse } from './constants/message_types';
 let isAutoParserEnabled = false;
 const parser = new Parser();
 
+function extractRenderedSourceText(): { body: string; contentType: string } {
+  const preText = document.querySelector('pre')?.textContent || '';
+  const bodyText = document.body?.innerText || '';
+  const documentText = document.documentElement?.textContent || '';
+  const documentMarkup = document.documentElement?.outerHTML || '';
+
+  return {
+    body: preText || bodyText || documentText || documentMarkup,
+    contentType: document.contentType || '',
+  };
+}
+
 function scheduleAutoParse(reason: string): void {
   if (!isAutoParserEnabled) {
     return;
@@ -67,6 +79,18 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
     case 'checkContentScriptInjected':
       typedSendResponse({ success: true });
       break;
+    case 'extractSourceContent': {
+      const source = extractRenderedSourceText();
+      typedSendResponse({
+        success: Boolean(source.body),
+        body: source.body,
+        headers: {
+          'content-type': source.contentType,
+        },
+        error: source.body ? undefined : 'No rendered source text found',
+      });
+      break;
+    }
     case 'clearURLs':
       browser.storage.local.set({
         "URL-PARSER": {},

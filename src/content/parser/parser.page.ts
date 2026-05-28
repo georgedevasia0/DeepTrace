@@ -3,10 +3,14 @@ import { StorageService } from './storage.service';
 import browser from 'webextension-polyfill';
 import { URLParserStorageWithOptionalCurrent } from './parser.types';
 import { URLClassification } from '../../background/classification/classifiers/classifier.types';
-import { filterCapturedEndpoints } from '../../utils/endpointFilter';
+import { filterCapturedEndpoints, shouldCaptureWebpage } from '../../utils/endpointFilter';
 
 export class PageParser {
   async parseCurrentPage(): Promise<Set<string>> {
+    if (!shouldCaptureWebpage(document.location.href)) {
+      return new Set();
+    }
+
     const pageContent = document.documentElement?.outerHTML || document.body?.outerHTML || '';
     const abPageURLs = Array.from(pageContent.matchAll(ABS_REGEX), match => match[1]);
     const relPageURLs = Array.from(pageContent.matchAll(REL_REGEX), match => match[1]);
