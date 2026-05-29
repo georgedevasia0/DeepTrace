@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill';
 import { Endpoint, Location, Webpage, URLParserStorage, URLParserStorageItem } from '../constants/message_types';
-import { shouldCaptureEndpoint, shouldCaptureSource, shouldCaptureWebpage } from './endpointFilter';
+import { getEndpointDedupeKey, shouldCaptureEndpoint, shouldCaptureSource, shouldCaptureWebpage } from './endpointFilter';
 
 interface FormattedURLData {
   allEndpoints: Endpoint[];
@@ -38,6 +38,7 @@ export async function formatURLData(): Promise<FormattedURLData> {
   let webpages: Webpage[] = [];
   let hierarchy: FormattedURLData['hierarchy'] = {};
   let captureIndex = 0;
+  const uniqueEndpoints = new Map<string, Endpoint>();
 
   const buildUniqueEndpoints = (
     rawEndpoints: Array<{
@@ -47,15 +48,15 @@ export async function formatURLData(): Promise<FormattedURLData> {
     foundAt: string,
     webpage: string
   ): Endpoint[] => {
-    const uniqueByKey = new Map<string, Endpoint>();
+    const endpointsForSource: Endpoint[] = [];
 
     rawEndpoints.forEach((endpoint) => {
       if (!shouldCaptureEndpoint(endpoint.url)) {
         return;
       }
 
-      const dedupeKey = `${foundAt}::${endpoint.url}`;
-      const existing = uniqueByKey.get(dedupeKey);
+      const dedupeKey = getEndpointDedupeKey(endpoint.url);
+      const existing = uniqueEndpoints.get(dedupeKey);
 
       if (existing) {
         existing.classifications = mergeClassifications(
@@ -65,16 +66,19 @@ export async function formatURLData(): Promise<FormattedURLData> {
         return;
       }
 
-      uniqueByKey.set(dedupeKey, {
+      const uniqueEndpoint = {
         url: endpoint.url,
         foundAt,
         webpage,
         classifications: endpoint.classifications as Record<string, boolean>,
         captureIndex: ++captureIndex,
-      });
+      };
+
+      uniqueEndpoints.set(dedupeKey, uniqueEndpoint);
+      endpointsForSource.push(uniqueEndpoint);
     });
 
-    return Array.from(uniqueByKey.values());
+    return endpointsForSource;
   };
 
   if (!urlParserData) {

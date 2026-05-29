@@ -13,7 +13,9 @@ interface SecretScanTask {
 }
 
 const SECRET_SCAN_PROGRESS_KEY = 'secretScanProgress';
+const SECRET_SCAN_STOP_KEY = 'secretScanStopRequested';
 const FETCH_TIMEOUT = 10000;
+const TASK_TIMEOUT = 20000;
 
 function safeDecodeURIComponent(value: string): string {
   try {
@@ -27,8 +29,8 @@ function pauseForUI(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-async function fetchTextWithTimeout(url: string, controller: AbortController): Promise<string> {
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+async function fetchTextWithTimeout(url: string, controller: AbortController, timeoutMs = FETCH_TIMEOUT): Promise<string> {
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, { signal: controller.signal });
@@ -50,6 +52,11 @@ export class SecretScanService {
   private running = false;
   private stopRequested = false;
   private activeFetchController: AbortController | null = null;
+  private storageListenerAttached = false;
+
+  constructor() {
+    this.attachStopListener();
+  }
 
   async scanCapturedURLs(): Promise<void> {
     if (this.running) {
@@ -61,6 +68,7 @@ export class SecretScanService {
 
     try {
       const startedAt = new Date().toISOString();
+      await browser.storage.local.set({ [SECRET_SCAN_STOP_KEY]: false });
 
       await this.updateProgress({
         running: true,
@@ -104,13 +112,16 @@ export class SecretScanService {
         });
 
         try {
-          const content = await this.getTaskContent(task);
+          const content = await this.withTaskTimeout(this.getTaskContent(task));
 
           if (this.stopRequested) {
             break;
           }
 
-          const secrets = SecretScanner.scan(buildScanText(content, task.capturedURLs));
+          const secrets = await SecretScanner.scanAsync(
+            buildScanText(content, task.capturedURLs),
+            () => this.stopRequested
+          );
 
           if (task.type === 'page') {
             await StorageService.savePageSecrets(task.webpageKey, secrets);
@@ -165,16 +176,22 @@ export class SecretScanService {
       this.activeFetchController = null;
       this.running = false;
       this.stopRequested = false;
+      await browser.storage.local.set({ [SECRET_SCAN_STOP_KEY]: false });
     }
   }
 
   stop(): void {
-    if (!this.running) {
-      return;
-    }
-
     this.stopRequested = true;
     this.activeFetchController?.abort();
+    browser.storage.local.set({ [SECRET_SCAN_STOP_KEY]: true }).catch((error) => {
+      console.error('Failed to persist secret scan stop request:', error);
+    });
+
+    if (this.running) {
+      this.updateProgressFromStopRequest().catch((error) => {
+        console.error('Failed to update secret scan stop progress:', error);
+      });
+    }
   }
 
   async getProgress(): Promise<SecretScanProgress> {
@@ -239,5 +256,49 @@ export class SecretScanService {
 
   private async updateProgress(progress: SecretScanProgress): Promise<void> {
     await browser.storage.local.set({ [SECRET_SCAN_PROGRESS_KEY]: progress });
+  }
+
+  private attachStopListener(): void {
+    if (this.storageListenerAttached) {
+      return;
+    }
+
+    this.storageListenerAttached = true;
+    browser.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local' || !changes[SECRET_SCAN_STOP_KEY]?.newValue) {
+        return;
+      }
+
+      this.stopRequested = true;
+      this.activeFetchController?.abort();
+    });
+  }
+
+  private async updateProgressFromStopRequest(): Promise<void> {
+    const progress = await this.getProgress();
+    await this.updateProgress({
+      ...progress,
+      running: true,
+      current: 'Stopping secret scan',
+    });
+  }
+
+  private async withTaskTimeout<T>(taskPromise: Promise<T>): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        this.activeFetchController?.abort();
+        reject(new Error(`Secret scan task timed out after ${TASK_TIMEOUT}ms`));
+      }, TASK_TIMEOUT);
+    });
+
+    try {
+      return await Promise.race([taskPromise, timeoutPromise]);
+    } finally {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 }

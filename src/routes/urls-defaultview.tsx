@@ -56,6 +56,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
   };
 
   const categoryCounts = getCategoryCounts();
+  const visibleEndpointCount = visibleUrls.length;
   const selectedFilteredCount = filteredURLs.filter(endpoint => selectedEndpointKeys.has(getEndpointSelectionKey(endpoint))).length;
   const areAllFilteredSelected = filteredURLs.length > 0 && selectedFilteredCount === filteredURLs.length;
   const activeCategoryCount = Object.values(selectedCategories).filter(Boolean).length;
@@ -235,7 +236,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                   )}
                   <div className={isLight ? 'rounded-[24px] border border-[#d5e4ed] bg-[#ffffff] p-4' : 'rounded-[24px] border border-[#2c4b57] bg-[#102129]/90 p-4'}>
                     <div className="text-[11px] uppercase tracking-[0.2em] text-[#79b6c9]">Visible Endpoints</div>
-                    <div className={`mt-3 text-3xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{filteredURLs.length}</div>
+                    <div className={`mt-3 text-3xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{visibleEndpointCount}</div>
                     <div className={`mt-2 text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Current result set after search, sort, and filters.</div>
                   </div>
                   <div className={isLight ? 'rounded-[24px] border border-[#eadfd2] bg-[#fff9f3] p-4' : 'rounded-[24px] border border-[#3d3a31] bg-[#1a1711]/90 p-4'}>
@@ -274,7 +275,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                       <div className={`mt-1 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Search, sort, select, and delete the current result set.</div>
                     </div>
                     <div className={`rounded-full border px-3 py-1 text-xs ${isLight ? 'border-[#cfe0ea] bg-[#f4fbff] text-[#2d7b96]' : 'border-[#345766] bg-[#12262f] text-[#8dc4d5]'}`}>
-                      {filteredURLs.length} visible
+                      {visibleEndpointCount} visible
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -460,6 +461,7 @@ export function URLsDefaultView({ selection = "default", setSelection }: URLsDef
                               isSelected={selectedEndpointKeys.has(getEndpointSelectionKey(endpoint))}
                               onToggleSelect={handleToggleSelectEndpoint}
                               isLight={isLight}
+                              displayIndex={index + 1}
                             />
                           ))
                         )}

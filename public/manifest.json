@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeepTrace",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "An endpoint parser and extractor with many flexible features",
   "icons": {
     "16": "icons/DeepTrace.png",

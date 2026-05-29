@@ -15,9 +15,10 @@ interface URLPropsProps {
   isSelected: boolean;
   onToggleSelect: (endpoint: Endpoint) => void;
   isLight?: boolean;
+  displayIndex?: number;
 }
 
-export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected, onToggleSelect, isLight = false }: URLPropsProps) {
+export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected, onToggleSelect, isLight = false, displayIndex }: URLPropsProps) {
   const [openModal, setOpenModal] = useState<keyof typeof MODAL_NAMES | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -129,7 +130,7 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${isLight ? 'border-[#d7e4ec] bg-[#ffffff] text-slate-700' : 'border-[#314d57] bg-[#0f1d23] text-[#b8d6df]'}`}>
-                #{endpoint.captureIndex}
+                #{displayIndex ?? endpoint.captureIndex}
               </span>
               <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${isLight ? 'border-[#cfe0ea] bg-[#f0f8fc] text-[#2d7b96]' : 'border-[#325260] bg-[#11242d] text-[#7fb8cb]'}`}>
                 Endpoint

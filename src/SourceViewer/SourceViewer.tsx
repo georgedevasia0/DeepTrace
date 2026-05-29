@@ -305,7 +305,8 @@ async function loadSource(sourceUrl: string): Promise<{ body: string; contentTyp
 }
 
 function SourceViewerApp() {
-  const sourceUrl = useMemo(getSourceUrl, []);
+  const [sourceUrl, setSourceUrl] = useState(getSourceUrl);
+  const [manualSourceUrl, setManualSourceUrl] = useState('');
   const [status, setStatus] = useState<ViewerStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [retryToken, setRetryToken] = useState(0);
@@ -322,8 +323,9 @@ function SourceViewerApp() {
 
     const renderSource = async () => {
       if (!sourceUrl) {
-        setStatus('error');
-        setErrorMessage('No source URL was provided.');
+        setStatus('loading');
+        setErrorMessage('');
+        setRenderedChunks([]);
         return;
       }
 
@@ -384,6 +386,38 @@ function SourceViewerApp() {
       cancelledRef.current = true;
     };
   }, [sourceUrl, retryToken]);
+
+  const handleOpenManualSource = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const nextSourceUrl = manualSourceUrl.trim();
+
+    if (!nextSourceUrl) {
+      setErrorMessage('Enter a source URL.');
+      return;
+    }
+
+    try {
+      new URL(nextSourceUrl);
+    } catch {
+      setErrorMessage('Enter a valid absolute URL, including http:// or https://.');
+      return;
+    }
+
+    const nextSearch = `?source=${encodeURIComponent(nextSourceUrl)}`;
+    window.history.pushState(null, '', `${window.location.pathname}${nextSearch}`);
+    setErrorMessage('');
+    setContentType('');
+    setLoadStrategy('');
+    setShowSourceDetails(true);
+    setSourceSize(0);
+    setTotalChunks(0);
+    setRenderedChunks([]);
+    setStatus('loading');
+    setRetryToken(0);
+    setSourceUrl(nextSourceUrl);
+    setManualSourceUrl('');
+  };
 
   const handleGrantPermissionAndRetry = async () => {
     const originPattern = getSourceOriginPattern(sourceUrl);
@@ -454,11 +488,45 @@ function SourceViewerApp() {
       </header>
 
       <section className="px-6 py-5">
-        {status === 'loading' && (
-          <div className="rounded-lg border border-[#29424d] bg-[#101c21] p-5 text-sm text-[#9fc1cc]">Fetching source...</div>
+        {!sourceUrl && (
+          <form
+            onSubmit={handleOpenManualSource}
+            className="mx-auto mt-10 max-w-3xl rounded-lg border border-[#29424d] bg-[#101c21] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          >
+            <label htmlFor="source-url" className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7fb8cb]">
+              Source URL
+            </label>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+              <input
+                id="source-url"
+                type="url"
+                value={manualSourceUrl}
+                onChange={(event) => {
+                  setManualSourceUrl(event.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                placeholder="https://example.com/app.js"
+                className="min-h-[46px] min-w-0 flex-1 rounded-2xl border border-[#355a67] bg-[#0b1418] px-4 py-2 text-sm text-white outline-none transition-all duration-200 placeholder:text-[#58707a] focus:border-[#7ad4e7]"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="min-h-[46px] rounded-2xl border border-[#66d4c1] bg-[#173d45] px-5 py-2 text-sm font-semibold text-[#daf8ff] transition-all duration-200 hover:border-[#aaf6ea]"
+              >
+                Open Source
+              </button>
+            </div>
+            {errorMessage && <div className="mt-3 text-sm text-[#ffd6d6]">{errorMessage}</div>}
+          </form>
         )}
 
-        {status === 'error' && (
+        {status === 'loading' && (
+          sourceUrl ? (
+            <div className="rounded-lg border border-[#29424d] bg-[#101c21] p-5 text-sm text-[#9fc1cc]">Fetching source...</div>
+          ) : null
+        )}
+
+        {sourceUrl && status === 'error' && (
           <div className="rounded-lg border border-[#6f3434] bg-[#251819] p-5 text-sm text-[#ffd6d6]">
             <div>{errorMessage}</div>
             {errorMessage.toLowerCase().includes('host permission') && (
@@ -473,7 +541,7 @@ function SourceViewerApp() {
           </div>
         )}
 
-        {status !== 'loading' && status !== 'error' && (
+        {sourceUrl && status !== 'loading' && status !== 'error' && (
           <div className="overflow-x-hidden overflow-y-auto rounded-lg border border-[#29424d] bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             {renderedChunks.map((chunk, index) => (
               <CodeChunk key={index} chunk={chunk} />

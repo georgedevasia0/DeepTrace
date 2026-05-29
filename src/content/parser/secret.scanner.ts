@@ -13,6 +13,7 @@ interface SecretDetector {
 const MAX_SECRET_LENGTH = 240;
 const MIN_CONFIG_SECRET_LENGTH = 4;
 const CONTEXT_RADIUS = 80;
+const SCAN_YIELD_INTERVAL = 25;
 
 function hasReasonableEntropy(value: string): boolean {
   const normalized = value.trim();
@@ -962,38 +963,118 @@ function isBetterFinding(candidate: StoredSecret, existing: StoredSecret): boole
 
 export class SecretScanner {
   static scan(content: string): StoredSecret[] {
+    return this.scanWithCancellation(content, () => false);
+  }
+
+  static async scanAsync(content: string, shouldStop: () => boolean): Promise<StoredSecret[]> {
+    const findings = new Map<string, StoredSecret>();
+
+    for (const detector of DETECTORS) {
+      if (shouldStop()) {
+        break;
+      }
+
+      await this.scanDetector(content, detector, findings, shouldStop);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    return Array.from(findings.values());
+  }
+
+  private static scanWithCancellation(content: string, shouldStop: () => boolean): StoredSecret[] {
     const findings = new Map<string, StoredSecret>();
 
     DETECTORS.forEach((detector) => {
-      detector.pattern.lastIndex = 0;
-      let match: RegExpExecArray | null;
-
-      while ((match = detector.pattern.exec(content)) !== null) {
-        const secret = getSecretFromMatch(match, detector).trim();
-        const context = getContext(content, match.index, match[0].length);
-
-        if (!secret || looksLikePlaceholder(secret) || detector.validate?.(secret, context) === false) {
-          continue;
-        }
-
-        const candidate: StoredSecret = {
-          detectorId: detector.id,
-          detectorName: detector.name,
-          secret,
-          context,
-          lineNumber: getLineNumber(content, match.index),
-          confidence: detector.confidence,
-          severity: detector.severity,
-          firstSeenAt: new Date().toISOString(),
-        };
-        const existing = findings.get(secret);
-
-        if (!existing || isBetterFinding(candidate, existing)) {
-          findings.set(secret, candidate);
-        }
+      if (!shouldStop()) {
+        this.scanDetectorSync(content, detector, findings, shouldStop);
       }
     });
 
     return Array.from(findings.values());
+  }
+
+  private static async scanDetector(
+    content: string,
+    detector: SecretDetector,
+    findings: Map<string, StoredSecret>,
+    shouldStop: () => boolean
+  ): Promise<void> {
+    detector.pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let matchCount = 0;
+
+    while (!shouldStop() && (match = detector.pattern.exec(content)) !== null) {
+      matchCount += 1;
+      if (match[0].length === 0) {
+        detector.pattern.lastIndex += 1;
+      }
+
+      if (matchCount % SCAN_YIELD_INTERVAL === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const secret = getSecretFromMatch(match, detector).trim();
+      const context = getContext(content, match.index, match[0].length);
+
+      if (!secret || looksLikePlaceholder(secret) || detector.validate?.(secret, context) === false) {
+        continue;
+      }
+
+      const candidate: StoredSecret = {
+        detectorId: detector.id,
+        detectorName: detector.name,
+        secret,
+        context,
+        lineNumber: getLineNumber(content, match.index),
+        confidence: detector.confidence,
+        severity: detector.severity,
+        firstSeenAt: new Date().toISOString(),
+      };
+      const existing = findings.get(secret);
+
+      if (!existing || isBetterFinding(candidate, existing)) {
+        findings.set(secret, candidate);
+      }
+    }
+  }
+
+  private static scanDetectorSync(
+    content: string,
+    detector: SecretDetector,
+    findings: Map<string, StoredSecret>,
+    shouldStop: () => boolean
+  ): void {
+    detector.pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while (!shouldStop() && (match = detector.pattern.exec(content)) !== null) {
+      if (match[0].length === 0) {
+        detector.pattern.lastIndex += 1;
+      }
+
+      const secret = getSecretFromMatch(match, detector).trim();
+      const context = getContext(content, match.index, match[0].length);
+
+      if (!secret || looksLikePlaceholder(secret) || detector.validate?.(secret, context) === false) {
+        continue;
+      }
+
+      const candidate: StoredSecret = {
+        detectorId: detector.id,
+        detectorName: detector.name,
+        secret,
+        context,
+        lineNumber: getLineNumber(content, match.index),
+        confidence: detector.confidence,
+        severity: detector.severity,
+        firstSeenAt: new Date().toISOString(),
+      };
+      const existing = findings.get(secret);
+
+      if (!existing || isBetterFinding(candidate, existing)) {
+        findings.set(secret, candidate);
+      }
+    }
   }
 }

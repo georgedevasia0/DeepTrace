@@ -3,10 +3,7 @@ import { Endpoint, Location, Webpage } from '../constants/message_types';
 import { formatURLData } from '../utils/URLdataFormatter_utils';
 import browser from 'webextension-polyfill';
 import { ClassificationMapping } from '../constants/defaultview_contants';
-
-function getEndpointDedupeKey(endpoint: Endpoint): string {
-  return `${endpoint.foundAt}::${endpoint.url}`;
-}
+import { getEndpointDedupeKey } from '../utils/endpointFilter';
 
 function mergeClassifications(
   first: Record<string, boolean>,
@@ -21,12 +18,12 @@ function mergeClassifications(
   return merged;
 }
 
-function dedupeEndpointsBySource(endpoints: Endpoint[]): Endpoint[] {
-  const uniqueBySource = new Map<string, Endpoint>();
+function dedupeEndpoints(endpoints: Endpoint[]): Endpoint[] {
+  const uniqueEndpoints = new Map<string, Endpoint>();
 
   endpoints.forEach((endpoint) => {
     const dedupeKey = getEndpointDedupeKey(endpoint);
-    const existing = uniqueBySource.get(dedupeKey);
+    const existing = uniqueEndpoints.get(dedupeKey);
 
     if (existing) {
       existing.classifications = mergeClassifications(existing.classifications, endpoint.classifications);
@@ -34,10 +31,10 @@ function dedupeEndpointsBySource(endpoints: Endpoint[]): Endpoint[] {
       return;
     }
 
-    uniqueBySource.set(dedupeKey, { ...endpoint });
+    uniqueEndpoints.set(dedupeKey, { ...endpoint });
   });
 
-  return Array.from(uniqueBySource.values());
+  return Array.from(uniqueEndpoints.values());
 }
 
 export function useURLData(
@@ -95,7 +92,7 @@ export function useURLData(
       return matchesLocation && matchesQuery && matchesWebpage && (matchesCategories || Object.values(selectedCategories).every(value => value));
     });
 
-    return dedupeEndpointsBySource(filtered).sort((a, b) => {
+    return dedupeEndpoints(filtered).sort((a, b) => {
       switch (sortOption) {
         case 'captured-asc':
           return a.captureIndex - b.captureIndex;

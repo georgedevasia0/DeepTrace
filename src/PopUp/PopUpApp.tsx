@@ -5,8 +5,10 @@ import "./App.css";
 import { MessageResponse, URLParserStorage, URLParserStorageItem } from "../constants/message_types";
 import { useThemeMode } from "../hooks/useThemeMode";
 import { SecretParserStorage, SecretParserStorageItem, SecretScanProgress } from "../constants/secret_types";
+import { formatURLData } from "../utils/URLdataFormatter_utils";
 
 const Logo = "/icons/DeepTrace.png";
+const SECRET_SCAN_STOP_KEY = "secretScanStopRequested";
 const DonationPaypalUrl = "https://paypal.me/georgedevasia";
 const DonationUpiId = "georgedevasia12@okicici";
 const DonationUpiUri = `upi://pay?pa=${DonationUpiId}&pn=George%20Devasia&tn=DeepTrace%20Donation`;
@@ -198,6 +200,8 @@ function PopUpApp() {
 
       const parserResult = await browser.storage.local.get(["URL-PARSER", "SECRET-PARSER", "secretScanProgress"]);
       const urlParser = (parserResult["URL-PARSER"] || {}) as URLParserStorage;
+      const { allEndpoints } = await formatURLData();
+      const corpusUrlCount = allEndpoints.length;
       const secretParser = (parserResult["SECRET-PARSER"] || {}) as SecretParserStorage;
       const secretScanProgress = (parserResult.secretScanProgress || {
         running: false,
@@ -247,13 +251,11 @@ function PopUpApp() {
         const currentPageData = urlParser[currentStorageKey] as URLParserStorageItem | undefined;
 
         if (currentPageData) {
-          const pageUrlCount = currentPageData.currPage.length;
           const externalJsEntries = Object.entries(currentPageData.externalJSFiles);
-          const externalUrlCount = externalJsEntries.reduce((total, [, urls]) => total + urls.length, 0);
 
           setState((prevState) => ({
             ...prevState,
-            urlCount: pageUrlCount + externalUrlCount,
+            urlCount: corpusUrlCount,
             jsFileCount: externalJsEntries.length,
           }));
           return;
@@ -275,7 +277,7 @@ function PopUpApp() {
 
       setState((prevState) => ({
         ...prevState,
-        urlCount: fallbackUrlCount,
+        urlCount: corpusUrlCount || fallbackUrlCount,
         jsFileCount: fallbackJsFileCount,
       }));
     } catch (error) {
@@ -335,7 +337,25 @@ function PopUpApp() {
 
   const parseURLs = () => handleAction("reparse");
   const scanSecrets = () => handleAction("scanSecrets");
-  const stopSecretScan = () => handleAction("stopSecretScan");
+  const stopSecretScan = async () => {
+    const nextProgress = {
+      ...state.secretScanProgress,
+      running: true,
+      current: "Stopping secret scan",
+    };
+
+    setState((prevState) => ({
+      ...prevState,
+      secretScanProgress: nextProgress,
+    }));
+
+    await browser.storage.local.set({
+      [SECRET_SCAN_STOP_KEY]: true,
+      secretScanProgress: nextProgress,
+    });
+
+    await handleAction("stopSecretScan");
+  };
   const clearURLs = () => handleAction("clearURLs");
 
   useEffect(() => {
@@ -416,6 +436,17 @@ function PopUpApp() {
     }
   };
 
+  const openSourceViewer = async () => {
+    const url = browser.runtime.getURL("SourceViewer/SourceViewer.html");
+
+    try {
+      await browser.tabs.create({ url });
+    } catch (error) {
+      console.error("Failed to open source viewer:", error);
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const statusTone = state.urlParser
     ? "border-[#4d7e4f] bg-[#13271a] text-[#9ff2b6]"
     : "border-[#664449] bg-[#291519] text-[#ff9ca8]";
@@ -490,6 +521,22 @@ function PopUpApp() {
                 <div className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] ${statusTone}`}>
                   {state.urlParser ? "Auto Parser On" : "Auto Parser Off"}
                 </div>
+                <button
+                  type="button"
+                  onClick={openSourceViewer}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all duration-200 ${
+                    isLight
+                      ? 'border-[#c8dce7] bg-[#ffffff] text-[#275d72] hover:border-[#7dc8dd]'
+                      : 'border-[#355966] bg-[#102129] text-[#9bd9ea] hover:border-[#7ad4e7]'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8 5H5.75A1.75 1.75 0 0 0 4 6.75v10.5C4 18.22 4.78 19 5.75 19h12.5c.97 0 1.75-.78 1.75-1.75v-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M13 5h6v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 12l7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                  Source Viewer
+                </button>
               </div>
             </div>
 
@@ -497,7 +544,7 @@ function PopUpApp() {
               <div className={cardClassName}>
                 <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#83bfd0]'}`}>Discovered URLs</div>
                 <div className={`mt-3 text-3xl font-bold ${headingTextClass}`}>{state.urlCount}</div>
-                <div className={`mt-2 text-xs ${mutedTextClass}`}>Current endpoint count on the active page.</div>
+                <div className={`mt-2 text-xs ${mutedTextClass}`}>Unique endpoint count in the current corpus.</div>
               </div>
               <div className={cardClassName}>
                 <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#83bfd0]'}`}>JavaScript Files</div>

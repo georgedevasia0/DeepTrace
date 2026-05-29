@@ -2,6 +2,7 @@
 
 import browser from 'webextension-polyfill';
 import { Endpoint, URLParserStorage, URLParserStorageItem } from '../constants/message_types';
+import { getEndpointDedupeKey } from './endpointFilter';
 
 export function sanitizeURL(endpoint: Endpoint): string {
   const cleanedWebpage = endpoint.webpage.replace(/\/$/, '').split('#')[0];
@@ -24,7 +25,7 @@ export function clearURLs(): void {
 }
 
 export function getEndpointSelectionKey(endpoint: Endpoint): string {
-  return `${endpoint.foundAt}::${endpoint.url}`;
+  return getEndpointDedupeKey(endpoint);
 }
 
 export async function deleteSelectedURLs(endpointsToDelete: Endpoint[]): Promise<void> {
