@@ -103,6 +103,71 @@ function safeDecodeURIComponent(value: string): string {
   }
 }
 
+type AlertTone = "success" | "error";
+
+interface AlertModalState {
+  title: string;
+  message: string;
+  tone: AlertTone;
+}
+
+function DeepTraceAlertModal({
+  alert,
+  isLight,
+  onClose,
+}: {
+  alert: AlertModalState;
+  isLight: boolean;
+  onClose: () => void;
+}) {
+  const toneClassName = alert.tone === "success"
+    ? isLight
+      ? "border-[#9bd9c1] bg-[#eafff6] text-[#16704c]"
+      : "border-[#315f50] bg-[#10261f] text-[#9af2ca]"
+    : isLight
+      ? "border-[#efb1b1] bg-[#fff4f4] text-[#9d2e2e]"
+      : "border-[#704047] bg-[#2a161b] text-[#ffc3c9]";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="deeptrace-alert-title">
+      <div className={`w-full max-w-sm rounded-[24px] border p-5 shadow-[0_24px_90px_rgba(0,0,0,0.42)] ${isLight ? 'border-[#d5e3ec] bg-[#ffffff] text-slate-950' : 'border-[#365461] bg-[#111f27] text-white'}`}>
+        <div className="flex items-start gap-3">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${toneClassName}`}>
+            {alert.tone === "success" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12.5l4.2 4.2L19 6.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 8v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M10.3 4.7 2.9 17.5A2 2 0 0 0 4.6 20h14.8a2 2 0 0 0 1.7-2.5L13.7 4.7a2 2 0 0 0-3.4 0Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <img src={Logo} alt="" className="h-5 w-5 rounded-md object-contain" />
+              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8fd2e2]">DeepTrace</div>
+            </div>
+            <h2 id="deeptrace-alert-title" className="mt-3 text-xl font-bold">{alert.title}</h2>
+            <p className={`mt-2 text-sm leading-6 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{alert.message}</p>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-[#79d5ea] bg-[linear-gradient(135deg,#17404d,#236376)] px-5 py-2 text-sm font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:border-[#a8ebf8]"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PopUpApp() {
   const { themeMode, isLight, toggleTheme } = useThemeMode();
   const [paypalCopied, setPaypalCopied] = useState(false);
@@ -111,6 +176,7 @@ function PopUpApp() {
   const [upiCopied, setUpiCopied] = useState(false);
   const [showUpiQr, setShowUpiQr] = useState(false);
   const [upiQrDataUrl, setUpiQrDataUrl] = useState("");
+  const [alertModal, setAlertModal] = useState<AlertModalState | null>(null);
   const [state, setState] = useState<AppState>({
     urlParser: false,
     urlCount: 0,
@@ -356,7 +422,34 @@ function PopUpApp() {
 
     await handleAction("stopSecretScan");
   };
-  const clearURLs = () => handleAction("clearURLs");
+  const clearURLs = async () => {
+    try {
+      await browser.storage.local.set({
+        "URL-PARSER": {},
+        urlCount: 0,
+        jsFileCount: 0,
+      });
+
+      setState((prevState) => ({
+        ...prevState,
+        urlCount: 0,
+        jsFileCount: 0,
+      }));
+      await updateAllState();
+      setAlertModal({
+        title: "Endpoints Cleared",
+        message: "All captured endpoints and tracked JavaScript asset counts have been reset.",
+        tone: "success",
+      });
+    } catch (error) {
+      console.error("Failed to clear endpoints:", error);
+      setAlertModal({
+        title: "Clear Failed",
+        message: "DeepTrace could not clear the endpoint corpus. Try again after reloading the extension.",
+        tone: "error",
+      });
+    }
+  };
 
   useEffect(() => {
     const handleChange = () => {
@@ -406,9 +499,22 @@ function PopUpApp() {
   };
 
   const clearCache = async () => {
-    await browser.storage.local.clear();
-    alert("Cache cleared");
-    updateAllState();
+    try {
+      await browser.storage.local.clear();
+      await updateAllState();
+      setAlertModal({
+        title: "Cache Cleared",
+        message: "Local DeepTrace cache, parser state, scopes, and stored scan data have been cleared.",
+        tone: "success",
+      });
+    } catch (error) {
+      console.error("Failed to clear cache:", error);
+      setAlertModal({
+        title: "Clear Failed",
+        message: "DeepTrace could not clear the local cache. Try again after reloading the extension.",
+        tone: "error",
+      });
+    }
   };
 
   const clearAllScopes = () => {
@@ -475,6 +581,13 @@ function PopUpApp() {
 
   return (
     <div className={shellClassName}>
+      {alertModal && (
+        <DeepTraceAlertModal
+          alert={alertModal}
+          isLight={isLight}
+          onClose={() => setAlertModal(null)}
+        />
+      )}
       <div className="mx-auto flex min-h-screen w-full max-w-[820px] flex-col px-4 py-4">
         <div className={panelClassName}>
           <div className={heroClassName}>
