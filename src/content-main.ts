@@ -4,6 +4,11 @@ import { Message, MessageResponse } from './constants/message_types';
 
 let isAutoParserEnabled = false;
 const parser = new Parser();
+let autoParseObserver: MutationObserver | null = null;
+let autoParseTimer: ReturnType<typeof setTimeout> | null = null;
+
+const AUTO_PARSE_DELAY = 750;
+const PARSER_PROGRESS_ID = 'parsing-progress-container';
 
 function extractRenderedSourceText(): { body: string; contentType: string } {
   const preText = document.querySelector('pre')?.textContent || '';
@@ -25,6 +30,73 @@ function scheduleAutoParse(reason: string): void {
   parser.parseURLs().catch((error) => {
     console.error(`Auto parser failed during ${reason}:`, error);
   });
+}
+
+function queueAutoParse(reason: string): void {
+  if (!isAutoParserEnabled || autoParseTimer) {
+    return;
+  }
+
+  autoParseTimer = setTimeout(() => {
+    autoParseTimer = null;
+    scheduleAutoParse(reason);
+  }, AUTO_PARSE_DELAY);
+}
+
+function isParserProgressMutation(mutation: MutationRecord): boolean {
+  const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+  if (target?.closest(`#${PARSER_PROGRESS_ID}`)) {
+    return true;
+  }
+
+  const changedNodes = mutation.type === 'childList'
+    ? [...Array.from(mutation.addedNodes), ...Array.from(mutation.removedNodes)]
+    : [];
+
+  return changedNodes.length > 0 &&
+    changedNodes.every((node) =>
+      node instanceof Element && (node.id === PARSER_PROGRESS_ID || Boolean(node.closest(`#${PARSER_PROGRESS_ID}`)))
+    );
+}
+
+function startAutoParseObserver(): void {
+  if (autoParseObserver || !isAutoParserEnabled || !document.documentElement) {
+    return;
+  }
+
+  autoParseObserver = new MutationObserver((mutations) => {
+    if (mutations.some((mutation) => !isParserProgressMutation(mutation))) {
+      queueAutoParse('dom-mutation');
+    }
+  });
+
+  autoParseObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src', 'href', 'action'],
+  });
+}
+
+function stopAutoParseObserver(): void {
+  autoParseObserver?.disconnect();
+  autoParseObserver = null;
+
+  if (autoParseTimer) {
+    clearTimeout(autoParseTimer);
+    autoParseTimer = null;
+  }
+}
+
+function setAutoParserEnabled(enabled: boolean, reason: string): void {
+  isAutoParserEnabled = enabled;
+
+  if (enabled) {
+    startAutoParseObserver();
+    scheduleAutoParse(reason);
+  } else {
+    stopAutoParseObserver();
+  }
 }
 
 // Set up message listener for content script
@@ -62,19 +134,12 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
       typedSendResponse({ success: true, state: isAutoParserEnabled });
       break;
     case 'setAutoParserState':
-      isAutoParserEnabled = typedMessage.state ?? false;
-      if (isAutoParserEnabled) {
-        scheduleAutoParse('toggle');
-      }
+      setAutoParserEnabled(typedMessage.state ?? false, 'toggle');
       typedSendResponse({ success: true });
       break;
     case 'autoParserStateChanged':
-      isAutoParserEnabled = typedMessage.state ?? false;
-      if (isAutoParserEnabled) {
-        parser.parseURLs().then(() => typedSendResponse({ success: true }));
-      } else {
-        typedSendResponse({ success: true });
-      }
+      setAutoParserEnabled(typedMessage.state ?? false, 'state-change');
+      typedSendResponse({ success: true });
       break;
     case 'checkContentScriptInjected':
       typedSendResponse({ success: true });
@@ -115,18 +180,26 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
 // Initialize as early as possible. Reading storage directly is faster than waiting
 // on a background round-trip during very short redirect documents.
 browser.storage.local.get('autoParserEnabled').then((result) => {
-  isAutoParserEnabled = Boolean(result.autoParserEnabled);
-  scheduleAutoParse('document-start');
+  setAutoParserEnabled(Boolean(result.autoParserEnabled), 'document-start');
 }).catch(() => {
   browser.runtime.sendMessage({ action: 'getAutoParserState' }).then((response: any) => {
-    isAutoParserEnabled = response.state ?? false;
-    scheduleAutoParse('background-state');
+    setAutoParserEnabled(response.state ?? false, 'background-state');
   });
 });
 
+browser.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.autoParserEnabled) {
+    setAutoParserEnabled(Boolean(changes.autoParserEnabled.newValue), 'storage-change');
+  }
+});
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => scheduleAutoParse('dom-content-loaded'), { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    startAutoParseObserver();
+    scheduleAutoParse('dom-content-loaded');
+  }, { once: true });
 } else {
+  startAutoParseObserver();
   scheduleAutoParse('already-interactive');
 }
 
@@ -138,3 +211,6 @@ document.addEventListener('readystatechange', () => {
     scheduleAutoParse(`ready-state-${document.readyState}`);
   }
 });
+
+window.addEventListener('popstate', () => queueAutoParse('history-navigation'));
+window.addEventListener('hashchange', () => queueAutoParse('hash-navigation'));

@@ -4,6 +4,7 @@ import { URLClassification } from '../../background/classification/classifiers/c
 import { decode } from 'punycode';
 import { shouldCaptureEndpoint, shouldCaptureSource, shouldCaptureWebpage } from '../../utils/endpointFilter';
 import { SecretParserStorage, SecretParserStorageItem, StoredSecret } from '../../constants/secret_types';
+import { isHostAllowed, matchesHostBoundary } from '../../utils/scope_utils';
 
 function safeDecodeURIComponent(value: string): string {
   try {
@@ -20,12 +21,20 @@ export class StorageService {
   }
 
   static async isInScope(host: string): Promise<boolean> {
-    const result = await browser.storage.local.get('scope');
+    const result = await browser.storage.local.get(['scope', 'outOfScope']);
     const scopes: string[] = result.scope as string[] || [];
-    const baseDomain: string = host.split('.').slice(-2).join('.');
-    return scopes.length === 0 || scopes.some(scope => 
-      baseDomain === scope.toLowerCase() || host === scope.toLowerCase()
-    );
+    const outOfScopes: string[] = result.outOfScope as string[] || [];
+    return isHostAllowed(host, scopes, outOfScopes);
+  }
+
+  static async isURLExcluded(url: string): Promise<boolean> {
+    try {
+      const result = await browser.storage.local.get('outOfScope');
+      const outOfScopes: string[] = result.outOfScope as string[] || [];
+      return matchesHostBoundary(new URL(url).hostname, outOfScopes);
+    } catch {
+      return false;
+    }
   }
 
   static async saveToStorage(encodedURL: string, urls: string[]): Promise<void> {

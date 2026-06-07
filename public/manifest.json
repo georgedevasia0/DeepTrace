@@ -15,15 +15,6 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://chatgpt.com/*",
-    "https://claude.ai/*",
-    "https://grok.com/*",
-    "<all_urls>"
-  ],
-  "optional_host_permissions": [
-    "https://chatgpt.com/*",
-    "https://claude.ai/*",
-    "https://grok.com/*",
     "<all_urls>"
   ],
   "action": {

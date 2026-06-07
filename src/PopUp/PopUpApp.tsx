@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import browser from "webextension-polyfill";
 import QRCode from "qrcode";
+import { normalizeScope } from "../utils/scope_utils";
 import "./App.css";
 import { MessageResponse, URLParserStorage, URLParserStorageItem } from "../constants/message_types";
 import { useThemeMode } from "../hooks/useThemeMode";
@@ -20,8 +21,11 @@ interface AppState {
   secretCount: number;
   secretScanProgress: SecretScanProgress;
   scopes: string[];
+  outOfScopes: string[];
   reqAmt: number;
 }
+
+type ScopeMode = "in" | "out";
 
 interface ActionButtonProps {
   label: string;
@@ -190,8 +194,10 @@ function PopUpApp() {
       current: "",
     },
     scopes: [],
+    outOfScopes: [],
     reqAmt: 1,
   });
+  const [scopeMode, setScopeMode] = useState<ScopeMode>("in");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -253,7 +259,7 @@ function PopUpApp() {
         browser.runtime.sendMessage({
           action: "getAutoParserState",
         }) as Promise<MessageResponse>,
-        browser.storage.local.get("scope"),
+        browser.storage.local.get(["scope", "outOfScope"]),
         browser.storage.local.get("requests"),
       ]);
 
@@ -261,6 +267,7 @@ function PopUpApp() {
         ...prevState,
         urlParser: autoParserState.state ?? false,
         scopes: (scopeResult.scope as string[]) || [],
+        outOfScopes: (scopeResult.outOfScope as string[]) || [],
         reqAmt: (reqAmtResult.requests as number) || 1,
       }));
 
@@ -470,26 +477,38 @@ function PopUpApp() {
     }
   };
 
-  const handleAddScope = () => {
-    const newScope = inputRef.current?.value?.trim();
+  const handleAddScope = async () => {
+    const newScope = normalizeScope(inputRef.current?.value || "");
     if (newScope) {
-      setState((prevState) => {
-        const updatedScopes = [...prevState.scopes, newScope];
-        browser.storage.local.set({ scope: updatedScopes });
-        return { ...prevState, scopes: updatedScopes };
-      });
+      const storageKey = scopeMode === "in" ? "scope" : "outOfScope";
+      const currentScopes = scopeMode === "in" ? state.scopes : state.outOfScopes;
+      const updatedScopes = Array.from(new Set([...currentScopes.map(normalizeScope), newScope].filter(Boolean)));
+      await browser.storage.local.set({ [storageKey]: updatedScopes });
+      setState((prevState) => ({
+        ...prevState,
+        [scopeMode === "in" ? "scopes" : "outOfScopes"]: updatedScopes,
+      }));
       if (inputRef.current) {
         inputRef.current.value = "";
+      }
+      if (state.urlParser) {
+        await handleAction("reparse");
       }
     }
   };
 
-  const handleRemoveScope = (scopeToRemove: string) => {
-    setState((prevState) => {
-      const updatedScopes = prevState.scopes.filter((scope) => scope !== scopeToRemove);
-      browser.storage.local.set({ scope: updatedScopes });
-      return { ...prevState, scopes: updatedScopes };
-    });
+  const handleRemoveScope = async (scopeToRemove: string) => {
+    const storageKey = scopeMode === "in" ? "scope" : "outOfScope";
+    const currentScopes = scopeMode === "in" ? state.scopes : state.outOfScopes;
+    const updatedScopes = currentScopes.filter((scope) => scope !== scopeToRemove);
+    await browser.storage.local.set({ [storageKey]: updatedScopes });
+    setState((prevState) => ({
+      ...prevState,
+      [scopeMode === "in" ? "scopes" : "outOfScopes"]: updatedScopes,
+    }));
+    if (state.urlParser) {
+      await handleAction("reparse");
+    }
   };
 
   const handleReqAmt = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -517,9 +536,16 @@ function PopUpApp() {
     }
   };
 
-  const clearAllScopes = () => {
-    browser.storage.local.set({ scope: [] });
-    setState((prevState) => ({ ...prevState, scopes: [] }));
+  const clearAllScopes = async () => {
+    const storageKey = scopeMode === "in" ? "scope" : "outOfScope";
+    await browser.storage.local.set({ [storageKey]: [] });
+    setState((prevState) => ({
+      ...prevState,
+      [scopeMode === "in" ? "scopes" : "outOfScopes"]: [],
+    }));
+    if (state.urlParser) {
+      await handleAction("reparse");
+    }
   };
 
   const handleCopyPaypalUrl = async () => {
@@ -578,6 +604,7 @@ function PopUpApp() {
   const secretScanPercent = state.secretScanProgress.total > 0
     ? Math.round((state.secretScanProgress.completed / state.secretScanProgress.total) * 100)
     : 0;
+  const activeScopes = scopeMode === "in" ? state.scopes : state.outOfScopes;
 
   return (
     <div className={shellClassName}>
@@ -666,8 +693,8 @@ function PopUpApp() {
               </div>
               <div className={cardClassName}>
                 <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#83bfd0]'}`}>Scope Rules</div>
-                <div className={`mt-3 text-3xl font-bold ${headingTextClass}`}>{state.scopes.length}</div>
-                <div className={`mt-2 text-xs ${mutedTextClass}`}>Host boundaries currently applied to parsing.</div>
+                <div className={`mt-3 text-3xl font-bold ${headingTextClass}`}>{state.scopes.length + state.outOfScopes.length}</div>
+                <div className={`mt-2 text-xs ${mutedTextClass}`}>Included and excluded host boundaries.</div>
               </div>
               <div className={cardClassName}>
                 <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#83bfd0]'}`}>Secrets</div>
@@ -797,8 +824,8 @@ function PopUpApp() {
               </section>
             )}
 
-            <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
-              <section className={sectionClassName}>
+            <div className="grid items-stretch gap-5 md:grid-cols-2">
+              <section className={`${sectionClassName} h-full`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Parsing Mode</div>
@@ -828,7 +855,7 @@ function PopUpApp() {
                 </div>
               </section>
 
-              <section className={sectionClassName}>
+              <section className={`${sectionClassName} h-full`}>
                 <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Performance Profile</div>
                 <h2 className={`mt-2 text-2xl font-bold ${headingTextClass}`}>Concurrent Requests</h2>
                 <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
@@ -861,19 +888,40 @@ function PopUpApp() {
             <section className={sectionClassName}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Target Scope</div>
+                  <div className={`text-[11px] uppercase tracking-[0.24em] ${scopeMode === "out" ? "text-[#ef8796]" : isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>Target Scope</div>
                   <h2 className={`mt-2 text-2xl font-bold ${headingTextClass}`}>Host Boundaries</h2>
                   <p className={`mt-2 max-w-2xl text-sm leading-6 ${mutedTextClass}`}>
-                    Keep scope empty to parse across everything you visit, or define domains to focus extraction on a tighter target surface.
+                    {scopeMode === "in"
+                      ? "Keep In Scope empty to allow every eligible host, or add domains to focus parsing."
+                      : "Domains added here are never parsed. Exclusions always override In Scope rules."}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={clearAllScopes}
-                  className="rounded-full border border-[#6e4b50] bg-[#2a181c] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#ffc0c9] transition-all duration-200 hover:border-[#f59cae]"
-                >
-                  Clear All
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className={`inline-flex rounded-full border p-1 ${isLight ? "border-[#c8dce7] bg-[#edf6fb]" : "border-[#31515c] bg-[#08151b]"}`}>
+                    <button
+                      type="button"
+                      onClick={() => setScopeMode("in")}
+                      className={`rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] transition-all duration-200 ${scopeMode === "in" ? "bg-[#236376] text-white shadow-[0_8px_22px_rgba(35,99,118,0.3)]" : mutedTextClass}`}
+                    >
+                      In Scope {state.scopes.length}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScopeMode("out")}
+                      className={`rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] transition-all duration-200 ${scopeMode === "out" ? "bg-[#71343f] text-[#ffe1e6] shadow-[0_8px_22px_rgba(113,52,63,0.3)]" : mutedTextClass}`}
+                    >
+                      Out of Scope {state.outOfScopes.length}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearAllScopes}
+                    disabled={activeScopes.length === 0}
+                    className="rounded-full border border-[#6e4b50] bg-[#2a181c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#ffc0c9] transition-all duration-200 hover:border-[#f59cae] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Clear {scopeMode === "in" ? "In Scope" : "Out of Scope"}
+                  </button>
+                </div>
               </div>
 
               <div className="mt-5 flex gap-3">
@@ -881,7 +929,12 @@ function PopUpApp() {
                   type="text"
                   ref={inputRef}
                   className={`min-w-0 flex-1 rounded-[22px] border px-4 py-4 text-sm outline-none transition-all duration-200 placeholder:text-slate-500 hover:border-[#5ea9bb] focus:border-[#81d9eb] focus:shadow-[0_0_0_4px_rgba(77,171,197,0.18)] ${isLight ? 'border-[#d3e3ec] bg-[#ffffff] text-slate-900' : 'border-[#355966] bg-[#102129] text-white'}`}
-                  placeholder="example.com or www.example.com"
+                  placeholder={scopeMode === "in" ? "Allow example.com and its subdomains" : "Exclude example.com and its subdomains"}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      void handleAddScope();
+                    }
+                  }}
                 />
                 <button
                   type="button"
@@ -893,15 +946,21 @@ function PopUpApp() {
               </div>
 
               <div className={`mt-5 rounded-[26px] border p-4 ${isLight ? 'border-[#d7e5ee] bg-[#ffffff]' : 'border-[#2d4d58] bg-[#0c161b]/92'}`}>
-                {state.scopes.length === 0 ? (
+                {activeScopes.length === 0 ? (
                   <div className={`rounded-[22px] border border-dashed px-4 py-8 text-center ${isLight ? 'border-[#d8e5ed]' : 'border-[#365461]'}`}>
-                    <div className={`text-[11px] uppercase tracking-[0.22em] ${isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>No Scope Rules</div>
-                    <div className={`mt-2 text-sm ${mutedTextClass}`}>DeepTrace is currently free to parse all eligible hosts.</div>
+                    <div className={`text-[11px] uppercase tracking-[0.22em] ${scopeMode === "out" ? "text-[#ef8796]" : isLight ? 'text-[#1d617a]' : 'text-[#87c7d8]'}`}>
+                      No {scopeMode === "in" ? "In Scope" : "Out of Scope"} Rules
+                    </div>
+                    <div className={`mt-2 text-sm ${mutedTextClass}`}>
+                      {scopeMode === "in"
+                        ? "DeepTrace can parse every eligible host except explicit exclusions."
+                        : "No hosts are currently excluded from parsing."}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex max-h-44 flex-col gap-3 overflow-auto pr-1">
-                    {state.scopes.map((scope, index) => (
-                      <div key={index} className={`flex items-center justify-between gap-3 rounded-[20px] border px-4 py-3 ${isLight ? 'border-[#d7e5ee] bg-[#f7fbff]' : 'border-[#31515c] bg-[#112028]'}`}>
+                    {activeScopes.map((scope) => (
+                      <div key={scope} className={`flex items-center justify-between gap-3 rounded-[20px] border px-4 py-3 ${scopeMode === "out" ? "border-[#663f48] bg-[#25171b]" : isLight ? 'border-[#d7e5ee] bg-[#f7fbff]' : 'border-[#31515c] bg-[#112028]'}`}>
                         <span className={`break-all text-sm font-medium ${headingTextClass}`}>{scope}</span>
                         <button
                           type="button"

@@ -51,6 +51,11 @@ export class JSFileProcessor {
   private async processFile(js_file: string): Promise<void> {
     if (!this.parsedJSFiles.has(js_file)) {
       try {
+        if (await StorageService.isURLExcluded(js_file)) {
+          this.parsedJSFiles.add(js_file);
+          return;
+        }
+
         const code = await this.fetchWithTimeout(js_file);
         this.successfullyFetchedFiles.add(js_file);
         

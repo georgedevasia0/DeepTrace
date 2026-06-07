@@ -6,8 +6,8 @@ import { ClassificationManager } from './background/classification.service';
 let isAutoParserEnabled = false;
 
 // Initialize the auto parser state and request handler
-browser.storage.local.get('autoParserEnabled').then((result) => {
-  (isAutoParserEnabled as any) = result.autoParserEnabled || false;
+const autoParserStateReady = browser.storage.local.get('autoParserEnabled').then((result) => {
+  isAutoParserEnabled = Boolean(result.autoParserEnabled);
 });
 
 
@@ -21,8 +21,10 @@ browser.runtime.onMessage.addListener((message: unknown, sender: MessageSender, 
   
   switch (typedMessage.action) {
     case 'getAutoParserState':
-      sendResponse({ success: true, state: isAutoParserEnabled });
-      break;
+      autoParserStateReady.then(() => {
+        sendResponse({ success: true, state: isAutoParserEnabled });
+      });
+      return true;
     case 'setAutoParserState':
       if (typeof typedMessage.state === 'boolean') {
         isAutoParserEnabled = typedMessage.state;
@@ -88,15 +90,34 @@ function notifyAllTabs() {
   });
 }
 
-// Listen for tab updates to inject content script if necessary
+async function notifyTab(tabId: number): Promise<void> {
+  await browser.tabs.sendMessage(tabId, {
+    action: 'autoParserStateChanged',
+    state: isAutoParserEnabled,
+  });
+}
+
+async function ensureContentScriptAndNotify(tabId: number): Promise<void> {
+  await autoParserStateReady;
+
+  try {
+    await browser.tabs.sendMessage(tabId, { action: 'checkContentScriptInjected' });
+  } catch {
+    await browser.scripting.executeScript({
+      target: { tabId },
+      files: ['content.js'],
+    });
+  }
+
+  await notifyTab(tabId);
+}
+
+// Trigger parsing after each full page load and recover if the manifest content
+// script was not injected into the tab.
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.startsWith('http')) {
-    browser.tabs.sendMessage(tabId, { action: 'checkContentScriptInjected' }).catch(() => {
-      // If the content script is not injected, inject it
-      browser.tabs.executeScript(tabId, { file: 'content-script.js' }).then(() => {
-        // After injection, send the current auto parser state
-        browser.tabs.sendMessage(tabId, { action: 'autoParserStateChanged', state: isAutoParserEnabled });
-      });
+    ensureContentScriptAndNotify(tabId).catch(() => {
+      // Restricted browser pages and tabs closed during navigation cannot be messaged.
     });
   }
 });
