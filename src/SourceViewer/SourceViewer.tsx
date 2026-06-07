@@ -11,9 +11,9 @@ const SOURCE_TAB_LOAD_TIMEOUT = 20000;
 const AI_AUTOMATION_DELAY = 3500;
 const AI_ANALYSIS_PROMPT = 'Analyze this file and find if there are any vulnerabilities or security issues in the file';
 const AI_TOOLS = [
-  { name: 'ChatGPT', icon: 'chatgpt', url: 'https://chatgpt.com/', originPattern: 'https://chatgpt.com/*', automation: 'browser' },
-  { name: 'Claude', icon: 'claude', url: 'https://claude.ai/new', originPattern: 'https://claude.ai/*', automation: 'browser' },
-  { name: 'Grok', icon: 'grok', url: 'https://grok.com/', originPattern: 'https://grok.com/*', automation: 'browser' },
+  { name: 'ChatGPT', icon: 'chatgpt', url: 'https://chatgpt.com/', automation: 'browser' },
+  { name: 'Claude', icon: 'claude', url: 'https://claude.ai/new', automation: 'browser' },
+  { name: 'Grok', icon: 'grok', url: 'https://grok.com/', automation: 'browser' },
 ];
 
 type ViewerStatus = 'loading' | 'rendering' | 'complete' | 'error';
@@ -26,14 +26,6 @@ type RenderedChunk = {
 function getSourceUrl(): string {
   const params = new URLSearchParams(window.location.search);
   return params.get('source') || '';
-}
-
-function getSourceOriginPattern(sourceUrl: string): string | null {
-  try {
-    return `${new URL(sourceUrl).origin}/*`;
-  } catch {
-    return null;
-  }
 }
 
 function splitIntoChunks(source: string): string[] {
@@ -424,21 +416,18 @@ async function automateAiAnalysis(tabId: number, toolName: string, fileName: str
   throw new Error(`${toolName} automation requires the browser scripting API.`);
 }
 
-async function ensureHostPermission(originPattern: string): Promise<boolean> {
-  const permissions = { origins: [originPattern] };
+async function ensureHostPermission(): Promise<boolean> {
+  const permissions = { origins: ['<all_urls>'] };
 
   try {
-    // Firefox requires permissions.request to run directly from the user's click.
-    // Calling permissions.contains first can consume that gesture.
+    if (await browser.permissions.contains(permissions)) {
+      return true;
+    }
+
     return browser.permissions.request(permissions);
   } catch (error) {
-    console.warn(`Failed to request host permission for ${originPattern}, checking existing grant:`, error);
-
-    try {
-      return browser.permissions.contains(permissions);
-    } catch {
-      return false;
-    }
+    console.warn('Failed to request access to all websites:', error);
+    return false;
   }
 }
 
@@ -724,18 +713,11 @@ function SourceViewerApp() {
   };
 
   const handleGrantPermissionAndRetry = async () => {
-    const originPattern = getSourceOriginPattern(sourceUrl);
-
-    if (!originPattern) {
-      setErrorMessage('Cannot request permission for this source URL.');
-      return;
-    }
-
     try {
-      const granted = await browser.permissions.request({ origins: [originPattern] });
+      const granted = await browser.permissions.request({ origins: ['<all_urls>'] });
 
       if (!granted) {
-        setErrorMessage(`Permission was not granted for ${originPattern}`);
+        setErrorMessage('Access to all websites was not granted.');
         return;
       }
 
@@ -762,10 +744,10 @@ function SourceViewerApp() {
 
     try {
       if (tool.automation === 'browser') {
-        const hasPermission = await ensureHostPermission(tool.originPattern);
+        const hasPermission = await ensureHostPermission();
 
         if (!hasPermission) {
-          setAiStatusMessage(`${tool.name} automation failed: Permission was not granted for ${tool.originPattern}`);
+          setAiStatusMessage(`${tool.name} automation failed: Access to all websites was not granted.`);
           return;
         }
 

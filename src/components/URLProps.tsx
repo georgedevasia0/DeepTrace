@@ -77,13 +77,6 @@ export function URLProps({ endpoint, searchQuery, selectedCategories, isSelected
     const url = browser.runtime.getURL(`SourceViewer/SourceViewer.html?source=${encodeURIComponent(source)}`);
 
     try {
-      try {
-        const sourceOrigin = new URL(source).origin;
-        await browser.permissions.request({ origins: [`${sourceOrigin}/*`] });
-      } catch (error) {
-        console.warn('Could not request source host permission before opening viewer:', error);
-      }
-
       await browser.tabs.create({ url });
     } catch (error) {
       console.error('Failed to open source viewer:', error);
